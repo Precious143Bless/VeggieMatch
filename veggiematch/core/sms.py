@@ -42,13 +42,12 @@ def _send_semaphore(phone_number, message):
 
 def send_otp(phone_number, otp_code, purpose):
     message_map = {
-        'POST':      f"[VeggieMatch] Your OTP to post vegetables: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'BUY':       f"[VeggieMatch] Your OTP to buy this item: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'RESCUE':    f"[VeggieMatch] Your OTP to claim this rescue item: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'DONATE':    f"[VeggieMatch] Your OTP to move your post to Donate: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'EDIT':      f"[VeggieMatch] Your OTP to edit your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'DELETE':    f"[VeggieMatch] Your OTP to delete your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'DASHBOARD': f"[VeggieMatch] Your OTP to view your posts: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'POST':   f"[VeggieMatch] Your OTP to post vegetables: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'BUY':    f"[VeggieMatch] Your OTP to buy this item: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'RESCUE': f"[VeggieMatch] Your OTP to claim this rescue item: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'DONATE': f"[VeggieMatch] Your OTP to move your post to Donate: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'EDIT':   f"[VeggieMatch] Your OTP to edit your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'DELETE': f"[VeggieMatch] Your OTP to delete your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
     }
     return _send_semaphore(phone_number, message_map.get(purpose, f"[VeggieMatch] Your OTP: {otp_code}"))
 
@@ -120,10 +119,22 @@ def create_otp(phone_number, purpose, post_id=None):
     from core.models import OTPVerification
     import threading
 
+    now      = timezone.now()
+    one_hour = now - timedelta(hours=1)
+    one_min  = now - timedelta(seconds=60)
+
+    # ── Max 5 sends per phone per hour ───────────────────────
+    if OTPVerification.objects.filter(phone_number=phone_number, created_at__gte=one_hour).count() >= 5:
+        return {'ok': False, 'error': 'Too many OTP requests. Please wait an hour before trying again.'}
+
+    # ── 60-second cooldown between sends ─────────────────────
+    last = OTPVerification.objects.filter(phone_number=phone_number, created_at__gte=one_min).order_by('-created_at').first()
+    if last:
+        wait = 60 - int((now - last.created_at).total_seconds())
+        return {'ok': False, 'error': f'Please wait {wait} seconds before requesting another OTP.'}
+
     OTPVerification.objects.filter(
-        phone_number=phone_number,
-        purpose=purpose,
-        is_used=False
+        phone_number=phone_number, purpose=purpose, is_used=False
     ).update(is_used=True)
 
     code = generate_otp()
@@ -132,11 +143,10 @@ def create_otp(phone_number, purpose, post_id=None):
         otp_code     = code,
         purpose      = purpose,
         post_id      = post_id,
-        expires_at   = timezone.now() + timedelta(minutes=settings.OTP_EXPIRY_MINUTES),
+        expires_at   = now + timedelta(minutes=settings.OTP_EXPIRY_MINUTES),
     )
-    # Send SMS in background so it doesn't block the response
     threading.Thread(target=send_otp, args=(phone_number, code, purpose), daemon=True).start()
-    return otp
+    return {'ok': True, 'otp': otp}
 
 
 def verify_otp(phone_number, otp_code, purpose):

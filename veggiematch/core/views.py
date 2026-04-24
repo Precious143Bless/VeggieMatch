@@ -173,7 +173,9 @@ def post_vegetable(request):
                 'pickup_note':        d.get('pickup_note', ''),
                 'timer_minutes':      form.get_timer_minutes(),
             }
-            create_otp(d['phone_number'], 'POST')
+            result = create_otp(d['phone_number'], 'POST')
+            if not result['ok']:
+                return JsonResponse({'ok': False, 'errors': {'phone_number': result['error']}})
             return JsonResponse({'ok': True, 'phone': d['phone_number']})
         else:
             errors = {f: e.as_text() for f, e in form.errors.items()}
@@ -250,7 +252,9 @@ def buy_start(request, post_id):
                 'buyer_photo_path':  _save_base64_image(d['buyer_photo'], 'faces/buyers') if d.get('buyer_photo', '').startswith('data:image') else '',
                 'quantity_kg':       str(qty),
             }
-            create_otp(d['phone_number'], 'BUY', post_id=post.pk)
+            result = create_otp(d['phone_number'], 'BUY', post_id=post.pk)
+            if not result['ok']:
+                return JsonResponse({'ok': False, 'errors': {'phone_number': result['error']}})
             return JsonResponse({'ok': True, 'phone': d['phone_number']})
         else:
             errors = {f: e.as_text() for f, e in form.errors.items()}
@@ -351,7 +355,9 @@ def rescue_start(request, post_id):
                 'claimer_photo_path':  _save_base64_image(d['claimer_photo'], 'faces/claimers') if d.get('claimer_photo', '').startswith('data:image') else '',
                 'quantity_kg':         str(qty),
             }
-            create_otp(d['phone_number'], 'RESCUE', post_id=post.pk)
+            result = create_otp(d['phone_number'], 'RESCUE', post_id=post.pk)
+            if not result['ok']:
+                return JsonResponse({'ok': False, 'errors': {'phone_number': result['error']}})
             return JsonResponse({'ok': True, 'phone': d['phone_number']})
         else:
             errors = {f: e.as_text() for f, e in form.errors.items()}
@@ -456,7 +462,9 @@ def donate_request(request, post_id):
     """AJAX: send OTP to farmer's number to verify they own the post."""
     post = get_object_or_404(VegetablePost, pk=post_id, status=VegetablePost.STATUS_ACTIVE)
     if request.method == 'POST':
-        create_otp(post.phone_number, 'DONATE', post_id=post.pk)
+        result = create_otp(post.phone_number, 'DONATE', post_id=post.pk)
+        if not result['ok']:
+            return JsonResponse({'ok': False, 'error': result['error']})
         return JsonResponse({'ok': True, 'phone': post.phone_number})
     return JsonResponse({'ok': False})
 
@@ -482,7 +490,9 @@ def dashboard_request(request):
         phone = request.POST.get('phone_number', '').strip()
         if not phone:
             return render(request, 'core/dashboard.html', {'error': 'Please enter your phone number.'})
-        create_otp(phone, 'POST')   # reuse POST purpose — farmer already knows this OTP type
+        result = create_otp(phone, 'DASHBOARD')
+        if not result['ok']:
+            return render(request, 'core/dashboard.html', {'error': result['error']})
         request.session['dashboard_phone'] = phone
         return render(request, 'core/dashboard.html', {'otp_sent': True, 'phone': phone})
     return render(request, 'core/dashboard.html', {})
@@ -517,7 +527,9 @@ def post_edit_request(request, post_id):
     if post.status in (VegetablePost.STATUS_BOUGHT, VegetablePost.STATUS_CLAIMED):
         return JsonResponse({'ok': False, 'error': 'Cannot edit a post that has already been completed.'})
     if request.method == 'POST':
-        create_otp(post.phone_number, 'EDIT', post_id=post.pk)
+        result = create_otp(post.phone_number, 'EDIT', post_id=post.pk)
+        if not result['ok']:
+            return JsonResponse({'ok': False, 'error': result['error']})
         return JsonResponse({'ok': True, 'phone': post.phone_number})
     return JsonResponse({'ok': False})
 
@@ -576,7 +588,9 @@ def post_delete_request(request, post_id):
     if post.status in (VegetablePost.STATUS_BOUGHT, VegetablePost.STATUS_CLAIMED):
         return JsonResponse({'ok': False, 'error': 'Cannot delete a post that has already been completed.'})
     if request.method == 'POST':
-        create_otp(post.phone_number, 'DELETE', post_id=post.pk)
+        result = create_otp(post.phone_number, 'DELETE', post_id=post.pk)
+        if not result['ok']:
+            return JsonResponse({'ok': False, 'error': result['error']})
         return JsonResponse({'ok': True, 'phone': post.phone_number})
     return JsonResponse({'ok': False})
 
