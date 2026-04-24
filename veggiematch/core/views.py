@@ -24,6 +24,13 @@ def _sync_all_posts():
     ).update(status=VegetablePost.STATUS_RESCUE)
 
 
+def _cleanup_old_otps():
+    """Delete OTP records older than 24 hours to prevent DB bloat."""
+    from .models import OTPVerification
+    cutoff = timezone.now() - timedelta(hours=24)
+    OTPVerification.objects.filter(created_at__lt=cutoff).delete()
+
+
 def _notify_expiring_posts():
     """Send a one-time SMS warning to farmers whose active posts expire within 30 minutes."""
     import threading
@@ -81,7 +88,15 @@ def _delete_file(rel_path):
         pass
 
 
-def _cleanup_expired_pending(request):
+def _clear_pending(request, key, photo_fields):
+    """Delete any photos and remove a pending session key before overwriting it."""
+    existing = request.session.get(key)
+    if existing:
+        for field in photo_fields:
+            _delete_file(existing.get(field, ''))
+        del request.session[key]
+
+
     """
     If a pending_* session key exists but its OTP has expired, delete the
     associated photo files and remove the session key so it doesn't linger.
@@ -121,6 +136,7 @@ def home(request):
     _sync_all_posts()
     _notify_expiring_posts()
     _cleanup_expired_pending(request)
+    _cleanup_old_otps()
     posts = VegetablePost.objects.filter(status=VegetablePost.STATUS_ACTIVE).order_by('expiry_time')
     impact = {
         'kg_rescued':   RescueRecord.objects.aggregate(total=Sum('quantity_kg'))['total'] or 0,
@@ -161,6 +177,7 @@ def post_vegetable(request):
             # Save photos to disk now — keep only the path in session, not the raw base64
             farmer_photo_path = _save_base64_image(d['farmer_photo'], 'faces/farmers')
             veggie_photo_path = _save_base64_image(d['veggie_photo'], 'veggies')
+            _clear_pending(request, 'pending_post', ['farmer_photo_path', 'veggie_photo_path'])
             request.session['pending_post'] = {
                 'farmer_name':        d['farmer_name'],
                 'phone_number':       d['phone_number'],
@@ -248,6 +265,7 @@ def buy_start(request, post_id):
             qty = d['quantity_kg']
             if qty > post.quantity:
                 return JsonResponse({'ok': False, 'errors': {'quantity_kg': f'Cannot exceed available quantity ({post.quantity} kg).'}})
+            _clear_pending(request, 'pending_buy', ['buyer_photo_path'])
             request.session['pending_buy'] = {
                 'post_id':           post.pk,
                 'buyer_name':        d['buyer_name'],
@@ -376,6 +394,7 @@ def rescue_start(request, post_id):
             qty = d['quantity_kg']
             if qty > post.quantity:
                 return JsonResponse({'ok': False, 'errors': {'quantity_kg': f'Cannot exceed remaining quantity ({post.quantity} kg).'}})
+            _clear_pending(request, 'pending_rescue', ['claimer_photo_path'])
             request.session['pending_rescue'] = {
                 'post_id':             post.pk,
                 'claimer_name':        d['claimer_name'],

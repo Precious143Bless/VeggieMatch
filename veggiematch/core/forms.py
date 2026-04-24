@@ -1,4 +1,15 @@
 from django import forms
+import re
+
+# Accepts: +639XXXXXXXXX, 09XXXXXXXXX, 9XXXXXXXXX (PH mobile)
+_PH_PHONE_RE = re.compile(r'^(?:\+63|0)9\d{9}$')
+
+def validate_ph_phone(value):
+    normalized = value.strip().replace(' ', '').replace('-', '')
+    if not _PH_PHONE_RE.match(normalized):
+        raise forms.ValidationError(
+            'Enter a valid Philippine mobile number (e.g. +639171234567 or 09171234567).'
+        )
 
 
 class PostVegetableForm(forms.Form):
@@ -8,6 +19,7 @@ class PostVegetableForm(forms.Form):
     )
     phone_number = forms.CharField(
         max_length=20, label='Phone Number',
+        validators=[validate_ph_phone],
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+63 9XX XXX XXXX'}),
     )
     farmer_photo = forms.CharField(
@@ -86,6 +98,7 @@ class BuyForm(forms.Form):
     )
     phone_number = forms.CharField(
         max_length=20, label='Phone Number',
+        validators=[validate_ph_phone],
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+63 9XX XXX XXXX'}),
     )
     quantity_kg  = forms.DecimalField(
@@ -106,6 +119,7 @@ class RescueForm(forms.Form):
     )
     phone_number  = forms.CharField(
         max_length=20, label='Phone Number',
+        validators=[validate_ph_phone],
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+63 9XX XXX XXXX'}),
     )
     quantity_kg   = forms.DecimalField(
