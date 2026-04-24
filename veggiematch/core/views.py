@@ -505,7 +505,7 @@ def donate_verify(request, post_id):
     post = get_object_or_404(VegetablePost, pk=post_id, status=VegetablePost.STATUS_ACTIVE)
     if request.method == 'POST':
         otp_code = request.POST.get('otp_code', '')
-        if verify_otp(post.phone_number, otp_code, 'DONATE'):
+        if verify_otp(post.phone_number, otp_code, 'DONATE', post_id=post.pk):
             post.status = VegetablePost.STATUS_RESCUE
             post.save(update_fields=['status'])
             return JsonResponse({'ok': True, 'message': 'Post moved to Donate. Community kitchens can now claim it for free.'})
@@ -538,10 +538,9 @@ def post_edit_verify(request, post_id):
             return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})
 
         # If additional edit fields are provided, save them
-        vegetable   = request.POST.get('vegetable', '').strip()
-        quantity    = request.POST.get('quantity', '').strip()
-        price_per_kg = request.POST.get('price_per_kg', '').strip()
-        pickup_note = request.POST.get('pickup_note', '').strip()
+        vegetable     = request.POST.get('vegetable', '').strip()
+        quantity      = request.POST.get('quantity', '').strip()
+        price_per_kg  = request.POST.get('price_per_kg', '').strip()
         surplus_level = request.POST.get('surplus_level', '').strip()
 
         if vegetable:
@@ -556,8 +555,9 @@ def post_edit_verify(request, post_id):
                 post.price_per_kg = float(price_per_kg)
             except ValueError:
                 pass
-        if pickup_note is not None:
-            post.pickup_note = pickup_note
+        # Only update pickup_note if the field was explicitly sent in the request
+        if 'pickup_note' in request.POST:
+            post.pickup_note = request.POST.get('pickup_note', '').strip()
         if surplus_level in ('LOW', 'MEDIUM', 'HIGH'):
             post.surplus_level = surplus_level
         post.save()
