@@ -53,10 +53,9 @@ def splash(request):
 
 def _save_base64_image(b64_string, subfolder):
     """Decode a base64 data-URI and save to MEDIA_ROOT. Returns relative path."""
-    # Strip the data:image/...;base64, prefix
     if ',' in b64_string:
         header, data = b64_string.split(',', 1)
-        ext = header.split('/')[1].split(';')[0]  # e.g. 'jpeg' or 'png'
+        ext = header.split('/')[1].split(';')[0]
     else:
         data = b64_string
         ext  = 'jpg'
@@ -69,11 +68,58 @@ def _save_base64_image(b64_string, subfolder):
     return rel_path
 
 
+def _delete_file(rel_path):
+    """Silently delete a MEDIA_ROOT-relative file if it exists."""
+    if not rel_path:
+        return
+    try:
+        full = Path(settings.MEDIA_ROOT) / rel_path
+        if full.exists():
+            full.unlink()
+    except Exception:
+        pass
+
+
+def _cleanup_expired_pending(request):
+    """
+    If a pending_* session key exists but its OTP has expired, delete the
+    associated photo files and remove the session key so it doesn't linger.
+    """
+    from .models import OTPVerification
+
+    for key, photo_fields in (
+        ('pending_post',   ['farmer_photo_path', 'veggie_photo_path']),
+        ('pending_buy',    ['buyer_photo_path']),
+        ('pending_rescue', ['claimer_photo_path']),
+    ):
+        pending = request.session.get(key)
+        if not pending:
+            continue
+
+        phone   = pending.get('phone_number', '')
+        purpose = {'pending_post': 'POST', 'pending_buy': 'BUY', 'pending_rescue': 'RESCUE'}[key]
+
+        # Check if a valid (unused, unexpired) OTP still exists
+        still_valid = OTPVerification.objects.filter(
+            phone_number=phone,
+            purpose=purpose,
+            is_used=False,
+            expires_at__gt=timezone.now(),
+        ).exists()
+
+        if not still_valid:
+            # OTP gone or expired — clean up photos and session key
+            for field in photo_fields:
+                _delete_file(pending.get(field, ''))
+            del request.session[key]
+
+
 # ── Home ──────────────────────────────────────────────────────────────────────
 
 def home(request):
     _sync_all_posts()
     _notify_expiring_posts()
+    _cleanup_expired_pending(request)
     posts = VegetablePost.objects.filter(status=VegetablePost.STATUS_ACTIVE).order_by('expiry_time')
     return render(request, 'core/home.html', {'posts': posts})
 
