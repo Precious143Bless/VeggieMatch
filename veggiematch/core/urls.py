@@ -1,0 +1,35 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('',                                   views.splash,              name='splash'),
+    path('home/',                              views.home,                name='home'),
+    path('category/',                          views.category,            name='category'),
+    path('posted/',                            views.posted_veggies,      name='posted_veggies'),
+    path('posted/<int:post_id>/',              views.post_detail,         name='post_detail'),
+
+    # Post vegetable
+    path('post/',                              views.post_vegetable,      name='post_vegetable'),
+    path('post/verify/',                       views.post_verify,         name='post_verify'),
+
+    # Edit (verify must come before the base path)
+    path('post/<int:post_id>/edit/verify/',    views.post_edit_verify,    name='post_edit_verify'),
+    path('post/<int:post_id>/edit/',           views.post_edit_request,   name='post_edit_request'),
+
+    # Delete
+    path('post/<int:post_id>/delete/verify/',  views.post_delete_verify,  name='post_delete_verify'),
+    path('post/<int:post_id>/delete/',         views.post_delete_request, name='post_delete_request'),
+
+    # Donate
+    path('post/<int:post_id>/donate/verify/',  views.donate_verify,       name='donate_verify'),
+    path('post/<int:post_id>/donate/',         views.donate_request,      name='donate_request'),
+
+    # Buy
+    path('buy/<int:post_id>/',                 views.buy_start,           name='buy_start'),
+    path('buy/verify/',                        views.buy_verify,          name='buy_verify'),
+
+    # Rescue
+    path('rescue/',                            views.rescue_list,         name='rescue_list'),
+    path('rescue/<int:post_id>/',              views.rescue_start,        name='rescue_start'),
+    path('rescue/verify/',                     views.rescue_verify,       name='rescue_verify'),
+]

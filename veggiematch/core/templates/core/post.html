@@ -1,0 +1,348 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="vm-post-page">
+
+  <!-- Header -->
+  <div class="vm-post-header">
+    <a href="{% url 'home' %}" class="vm-back-arrow"><i class="bi bi-arrow-left"></i></a>
+    <div class="vm-post-header-title">Post Vegetables</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <!-- Steps -->
+  <div class="vm-post-steps">
+    <div class="vm-pstep active" id="pstep1"><span>1</span> Details</div>
+    <div class="vm-pstep-line"></div>
+    <div class="vm-pstep" id="pstep2"><span>2</span> OTP</div>
+    <div class="vm-pstep-line"></div>
+    <div class="vm-pstep" id="pstep3"><span>3</span> Live!</div>
+  </div>
+
+  <!-- ── STEP 1: Form ── -->
+  <div id="stepForm" class="vm-post-step-content">
+    <form id="postForm" novalidate>
+      {% csrf_token %}
+      <input type="hidden" id="id_farmer_photo" name="farmer_photo" value="">
+      <input type="hidden" id="id_veggie_photo"  name="veggie_photo"  value="">
+
+      <div class="vm-post-section">
+        <div class="vm-post-section-title">👨‍🌾 Your Info</div>
+
+        <div class="vm-field">
+          <label class="vm-label">Full Name</label>
+          {{ form.farmer_name }}
+          <div class="vm-err d-none" id="err-farmer_name"></div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">Phone Number</label>
+          {{ form.phone_number }}
+          <div class="form-text">OTP will be sent here.</div>
+          <div class="vm-err d-none" id="err-phone_number"></div>
+        </div>
+
+        <!-- Face capture -->
+        <div class="vm-field">
+          <label class="vm-label"><i class="bi bi-person-bounding-box me-1"></i>Your Face Photo <span class="text-danger">*</span></label>
+          <div class="vm-camera-box" id="farmerCamBox">
+            <video id="farmerVideo" autoplay playsinline></video>
+            <canvas id="farmerCanvas" style="display:none;"></canvas>
+            <img id="farmerPreview" alt="Face photo" style="display:none;">
+            <div class="vm-cam-overlay" id="farmerOverlay">
+              <i class="bi bi-camera-fill"></i>
+              <span>Tap to start camera</span>
+            </div>
+          </div>
+          <div class="vm-camera-actions">
+            <button type="button" class="btn-capture" id="farmerCaptureBtn" style="display:none;">
+              <i class="bi bi-camera-fill"></i> Capture Photo
+            </button>
+            <button type="button" class="btn-retake" id="farmerRetakeBtn">
+              <i class="bi bi-arrow-counterclockwise"></i> Retake
+            </button>
+          </div>
+          <div class="vm-err d-none" id="err-farmer_photo"></div>
+        </div>
+      </div>
+
+      <div class="vm-post-section">
+        <div class="vm-post-section-title">🥬 Vegetable Info</div>
+
+        <div class="vm-field">
+          <label class="vm-label">Vegetable Name</label>
+          {{ form.vegetable }}
+          <div class="vm-err d-none" id="err-vegetable"></div>
+        </div>
+
+        <!-- Veggie photo capture -->
+        <div class="vm-field">
+          <label class="vm-label"><i class="bi bi-camera me-1"></i>Photo of Vegetables <span class="text-danger">*</span></label>
+          <div class="vm-camera-box" id="veggieCamBox">
+            <video id="veggieVideo" autoplay playsinline></video>
+            <canvas id="veggieCanvas" style="display:none;"></canvas>
+            <img id="veggiePreview" alt="Veggie photo" style="display:none;">
+            <div class="vm-cam-overlay" id="veggieOverlay">
+              <i class="bi bi-camera-fill"></i>
+              <span>Tap to start camera</span>
+            </div>
+          </div>
+          <div class="vm-camera-actions">
+            <button type="button" class="btn-capture" id="veggieCaptureBtn" style="display:none;">
+              <i class="bi bi-camera-fill"></i> Capture Photo
+            </button>
+            <button type="button" class="btn-retake" id="veggieRetakeBtn">
+              <i class="bi bi-arrow-counterclockwise"></i> Retake
+            </button>
+          </div>
+          <div class="vm-err d-none" id="err-veggie_photo"></div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">Surplus Level</label>
+          {{ form.surplus_level }}
+          <div class="vm-err d-none" id="err-surplus_level"></div>
+        </div>
+
+        <div class="vm-field-row">
+          <div class="vm-field">
+            <label class="vm-label">Quantity (kg)</label>
+            {{ form.quantity }}
+            <div class="vm-err d-none" id="err-quantity"></div>
+          </div>
+          <div class="vm-field">
+            <label class="vm-label">Price per kg (₱)</label>
+            {{ form.price_per_kg }}
+            <div class="vm-err d-none" id="err-price_per_kg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="vm-post-section">
+        <div class="vm-post-section-title">📍 Pickup & Timer</div>
+
+        <div class="vm-field">
+          <label class="vm-label">Pickup Location</label>
+          <div class="vm-location-box">
+            <i class="bi bi-pin-map-fill"></i> La Trinidad Trading Post, Benguet
+          </div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">Further Instructions (optional)</label>
+          {{ form.pickup_note }}
+          <div class="form-text">{{ form.pickup_note.help_text }}</div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">Listing Duration</label>
+          <div class="vm-field-row">
+            <div class="vm-field">{{ form.timer_value }}</div>
+            <div class="vm-field">{{ form.timer_unit }}</div>
+          </div>
+          <div class="form-text">How long before unclaimed items go to rescue.</div>
+        </div>
+      </div>
+
+      <div class="vm-post-submit-wrap">
+        <button type="submit" class="vm-btn-green w-100" id="postSubmitBtn">
+          <i class="bi bi-send-fill me-2"></i>Send OTP & Continue
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── STEP 2: OTP ── -->
+  <div id="stepOTP" class="vm-post-step-content" style="display:none;">
+    <div class="vm-otp-card">
+      <div class="vm-otp-icon">📱</div>
+      <h3 class="vm-otp-title">Check Your Phone</h3>
+      <p class="vm-otp-sub">We sent a 6-digit OTP to</p>
+      <div class="vm-phone-display" id="postOtpPhone"></div>
+
+      <form id="postOtpForm" novalidate class="mt-4">
+        {% csrf_token %}
+        <label class="vm-label text-center d-block mb-2">Enter 6-digit OTP</label>
+        <input type="text" class="otp-input form-control" id="postOtpInput"
+               maxlength="6" inputmode="numeric" autocomplete="one-time-code"
+               placeholder="_ _ _ _ _ _">
+        <div class="vm-err d-none mt-2 justify-content-center" id="err-post-otp"></div>
+        <button type="submit" class="vm-btn-green w-100 mt-3" id="postOtpBtn">
+          <i class="bi bi-check-circle-fill me-2"></i>Confirm & Post
+        </button>
+      </form>
+      <p class="text-muted text-center small mt-3"><i class="bi bi-clock me-1"></i>OTP expires in 10 minutes.</p>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Success ── -->
+  <div id="stepSuccess" class="vm-post-step-content" style="display:none;">
+    <div class="vm-success-card">
+      <div class="vm-success-icon">🎉</div>
+      <h3>Post is Live!</h3>
+      <p id="postSuccessMsg" class="text-muted"></p>
+      <a href="{% url 'home' %}" class="vm-btn-green mt-3">
+        <i class="bi bi-house-fill me-2"></i>Back to Home
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const POST_URL   = "{% url 'post_vegetable' %}";
+const VERIFY_URL = "{% url 'post_verify' %}";
+
+// ── Camera with tap-to-start ──────────────────────────────────
+function setupCamera(overlayId, videoId, canvasId, captureBtnId, previewId, hiddenId, retakeBtnId) {
+  const overlay    = document.getElementById(overlayId);
+  const video      = document.getElementById(videoId);
+  const canvas     = document.getElementById(canvasId);
+  const captureBtn = document.getElementById(captureBtnId);
+  const preview    = document.getElementById(previewId);
+  const hidden     = document.getElementById(hiddenId);
+  const retakeBtn  = document.getElementById(retakeBtnId);
+  let stream = null;
+
+  async function startCam() {
+    overlay.style.display = 'none';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      video.srcObject = stream;
+      video.style.display = 'block';
+      captureBtn.style.display = 'inline-flex';
+      retakeBtn.style.display  = 'none';
+      preview.style.display    = 'none';
+      hidden.value = '';
+    } catch {
+      overlay.style.display = 'flex';
+      overlay.innerHTML = '<i class="bi bi-camera-video-off-fill"></i><span>Camera denied</span>';
+    }
+  }
+
+  overlay.addEventListener('click', startCam);
+
+  captureBtn.addEventListener('click', () => {
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    hidden.value = dataUrl;
+    preview.src  = dataUrl;
+    preview.style.display    = 'block';
+    video.style.display      = 'none';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display  = 'inline-flex';
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    // Clear error
+    const errEl = document.getElementById('err-' + hiddenId.replace('id_',''));
+    if (errEl) { errEl.textContent = ''; errEl.classList.add('d-none'); }
+  });
+
+  retakeBtn.addEventListener('click', startCam);
+}
+
+setupCamera('farmerOverlay','farmerVideo','farmerCanvas','farmerCaptureBtn','farmerPreview','id_farmer_photo','farmerRetakeBtn');
+setupCamera('veggieOverlay','veggieVideo','veggieCanvas','veggieCaptureBtn','veggiePreview','id_veggie_photo','veggieRetakeBtn');
+
+// ── Step helpers ──────────────────────────────────────────────
+function setStep(n) {
+  document.getElementById('stepForm').style.display    = n === 1 ? '' : 'none';
+  document.getElementById('stepOTP').style.display     = n === 2 ? '' : 'none';
+  document.getElementById('stepSuccess').style.display = n === 3 ? '' : 'none';
+  [1,2,3].forEach(i => {
+    const el = document.getElementById('pstep' + i);
+    el.classList.toggle('active',    i === n);
+    el.classList.toggle('completed', i < n);
+  });
+  window.scrollTo(0, 0);
+}
+
+// ── Submit post form ──────────────────────────────────────────
+document.getElementById('postForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  // Client-side photo check
+  const farmerPhoto = document.getElementById('id_farmer_photo').value;
+  const veggiePhoto = document.getElementById('id_veggie_photo').value;
+  let hasError = false;
+
+  if (!farmerPhoto || !farmerPhoto.startsWith('data:image')) {
+    const el = document.getElementById('err-farmer_photo');
+    el.textContent = 'Please capture your face photo.';
+    el.classList.remove('d-none');
+    hasError = true;
+  }
+  if (!veggiePhoto || !veggiePhoto.startsWith('data:image')) {
+    const el = document.getElementById('err-veggie_photo');
+    el.textContent = 'Please capture a photo of your vegetables.';
+    el.classList.remove('d-none');
+    hasError = true;
+  }
+  if (hasError) return;
+
+  const btn = document.getElementById('postSubmitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending OTP...';
+
+  const fd  = new FormData(e.target);
+  const res = await fetch(POST_URL, {
+    method: 'POST',
+    headers: {'X-CSRFToken': fd.get('csrfmiddlewaretoken')},
+    body: fd,
+  });
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Send OTP & Continue';
+
+  if (data.ok) {
+    document.getElementById('postOtpPhone').textContent = data.phone;
+    setStep(2);
+    document.getElementById('postOtpInput').focus();
+  } else {
+    Object.entries(data.errors || {}).forEach(([field, msg]) => {
+      const el = document.getElementById('err-' + field);
+      if (el) { el.textContent = msg.replace(/^\*\s*/, ''); el.classList.remove('d-none'); }
+    });
+  }
+});
+
+// ── Submit OTP ────────────────────────────────────────────────
+document.getElementById('postOtpForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('postOtpBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+
+  const fd  = new FormData(e.target);
+  fd.set('otp_code', document.getElementById('postOtpInput').value);
+  const res = await fetch(VERIFY_URL, {
+    method: 'POST',
+    headers: {'X-CSRFToken': fd.get('csrfmiddlewaretoken')},
+    body: fd,
+  });
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Confirm & Post';
+
+  if (data.ok) {
+    document.getElementById('postSuccessMsg').textContent = data.message;
+    setStep(3);
+  } else {
+    const errEl = document.getElementById('err-post-otp');
+    errEl.textContent = (data.errors?.otp_code || data.errors?.__all__ || 'Invalid OTP.').replace(/^\*\s*/, '');
+    errEl.classList.remove('d-none');
+  }
+});
+
+// Auto-submit OTP when 6 digits
+document.getElementById('postOtpInput').addEventListener('input', function () {
+  if (this.value.length === 6) document.getElementById('postOtpForm').requestSubmit();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-6 col-lg-5">
+
+      <div class="vm-otp-wrap">
+        <div class="vm-otp-top {% if purpose == 'rescue' %}vm-form-top-rescue{% endif %}">
+          <div class="vm-otp-icon">📱</div>
+          <h2 class="vm-otp-title">Check Your Phone</h2>
+          <p class="vm-otp-sub">We sent a 6-digit OTP to</p>
+          <div class="vm-phone-display">{{ phone }}</div>
+        </div>
+
+        <div class="vm-otp-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-4">
+              <label class="vm-label text-center d-block mb-2">Enter 6-digit OTP</label>
+              {{ form.otp_code }}
+              {% if form.otp_code.errors %}
+                <div class="vm-field-error justify-content-center mt-2">
+                  <i class="bi bi-exclamation-circle"></i>{{ form.otp_code.errors.0 }}
+                </div>
+              {% endif %}
+            </div>
+
+            {% if purpose == 'rescue' %}
+              <button type="submit" class="btn vm-btn-rescue w-100 btn-lg">
+                <i class="bi bi-check-circle-fill me-2"></i>Confirm Rescue
+              </button>
+            {% else %}
+              <button type="submit" class="btn vm-btn-primary w-100 btn-lg">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                {% if purpose == 'post' %}Confirm & Post{% else %}Confirm Claim{% endif %}
+              </button>
+            {% endif %}
+          </form>
+
+          <p class="text-muted text-center small mt-4 mb-0">
+            <i class="bi bi-clock me-1"></i>OTP expires in 10 minutes.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const inp = document.querySelector('.otp-input');
+  inp?.focus();
+  inp?.addEventListener('input', function () {
+    if (this.value.length === 6) this.closest('form').submit();
+  });
+</script>
+{% endblock %}

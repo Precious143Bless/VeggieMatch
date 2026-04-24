@@ -1,0 +1,296 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="vm-post-page">
+
+  <!-- Header with back button -->
+  <div class="vm-post-header">
+    <a href="{% url 'rescue_list' %}" class="vm-back-arrow"><i class="bi bi-arrow-left"></i></a>
+    <div class="vm-post-header-title">Claim Rescue Item</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <!-- Steps -->
+  <div class="vm-post-steps">
+    <div class="vm-pstep active" id="pstep1"><span>1</span> Your Info</div>
+    <div class="vm-pstep-line"></div>
+    <div class="vm-pstep" id="pstep2"><span>2</span> OTP</div>
+    <div class="vm-pstep-line"></div>
+    <div class="vm-pstep" id="pstep3"><span>3</span> Claimed!</div>
+  </div>
+
+  <!-- ── STEP 1: Form ── -->
+  <div id="stepForm" class="vm-post-step-content">
+
+    <!-- Post summary -->
+    <div class="vm-rescue-summary-card">
+      <div class="vm-rescue-summary-img">
+        {% if post.veggie_photo %}
+          <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
+        {% else %}
+          <div class="vm-rescue-summary-placeholder">🥬</div>
+        {% endif %}
+      </div>
+      <div class="vm-rescue-summary-info">
+        <div class="vm-rescue-summary-name">{{ post.vegetable }}</div>
+        <div class="vm-rescue-summary-meta">
+          <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg</span>
+          <span class="text-success fw-bold"><i class="bi bi-gift-fill"></i> Free</span>
+        </div>
+        <div class="vm-rescue-summary-loc">
+          <i class="bi bi-geo-alt-fill"></i>
+          {{ post.pickup_address }}{% if post.pickup_note %} — {{ post.pickup_note }}{% endif %}
+        </div>
+        <div class="vm-rescue-summary-farmer">
+          <i class="bi bi-person-fill"></i> {{ post.farmer_name }}
+        </div>
+      </div>
+    </div>
+
+    <form id="rescueForm" novalidate>
+      {% csrf_token %}
+      <input type="hidden" id="id_claimer_photo" name="claimer_photo" value="">
+
+      <div class="vm-post-section">
+        <div class="vm-post-section-title">🍲 Your Info</div>
+
+        <div class="vm-field">
+          <label class="vm-label">{{ form.claimer_name.label }}</label>
+          {{ form.claimer_name }}
+          <div class="form-text">Can be your personal name or organization/kitchen name.</div>
+          <div class="vm-err d-none" id="err-claimer_name"></div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">{{ form.quantity_kg.label }}</label>
+          {{ form.quantity_kg }}
+          <div class="form-text">Maximum available: <strong>{{ post.quantity }} kg</strong></div>
+          <div class="vm-err d-none" id="err-quantity_kg"></div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">Phone Number</label>
+          {{ form.phone_number }}
+          <div class="form-text">An OTP will be sent to this number.</div>
+          <div class="vm-err d-none" id="err-phone_number"></div>
+        </div>
+
+        <!-- Face capture -->
+        <div class="vm-field">
+          <label class="vm-label"><i class="bi bi-person-bounding-box me-1"></i>Your Face Photo <span class="text-danger">*</span></label>
+          <div class="vm-camera-box">
+            <video id="rescuerVideo" autoplay playsinline></video>
+            <canvas id="rescuerCanvas" style="display:none;"></canvas>
+            <img id="rescuerPreview" alt="Face photo" style="display:none;">
+            <div class="vm-cam-overlay" id="rescuerOverlay">
+              <i class="bi bi-camera-fill"></i>
+              <span>Tap to start camera</span>
+            </div>
+          </div>
+          <div class="vm-camera-actions">
+            <button type="button" class="btn-capture" id="rescuerCaptureBtn" style="display:none;">
+              <i class="bi bi-camera-fill"></i> Capture Photo
+            </button>
+            <button type="button" class="btn-retake" id="rescuerRetakeBtn">
+              <i class="bi bi-arrow-counterclockwise"></i> Retake
+            </button>
+          </div>
+          <div class="vm-err d-none mt-1" id="err-rescuer_photo"></div>
+        </div>
+      </div>
+
+      <div class="vm-post-submit-wrap">
+        <button type="submit" class="vm-btn-red w-100" id="rescueSubmitBtn">
+          <i class="bi bi-send-fill me-2"></i>Send OTP & Confirm Rescue
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── STEP 2: OTP ── -->
+  <div id="stepOTP" class="vm-post-step-content" style="display:none;">
+    <div class="vm-otp-card" style="border-top: 4px solid var(--red);">
+      <div class="vm-otp-icon">📱</div>
+      <h3 class="vm-otp-title">Check Your Phone</h3>
+      <p class="vm-otp-sub">We sent a 6-digit OTP to</p>
+      <div class="vm-phone-display" id="rescueOtpPhone" style="background:rgba(168,28,28,0.1);color:var(--red);border-color:rgba(168,28,28,0.3);"></div>
+
+      <form id="rescueOtpForm" novalidate class="mt-4">
+        {% csrf_token %}
+        <label class="vm-label text-center d-block mb-2">Enter 6-digit OTP</label>
+        <input type="text" class="otp-input form-control" id="rescueOtpInput"
+               maxlength="6" inputmode="numeric" autocomplete="one-time-code"
+               placeholder="_ _ _ _ _ _">
+        <div class="vm-err d-none mt-2 justify-content-center" id="err-rescue-otp"></div>
+        <button type="submit" class="vm-btn-red w-100 mt-3" id="rescueOtpBtn">
+          <i class="bi bi-check-circle-fill me-2"></i>Confirm Rescue
+        </button>
+      </form>
+      <p class="text-muted text-center small mt-3"><i class="bi bi-clock me-1"></i>OTP expires in 10 minutes.</p>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Success ── -->
+  <div id="stepSuccess" class="vm-post-step-content" style="display:none;">
+    <div class="vm-success-card" style="border-top: 4px solid var(--red);">
+      <div class="vm-success-icon">🎉</div>
+      <h3>Rescue Confirmed!</h3>
+      <p id="rescueSuccessMsg" class="text-muted"></p>
+      <a href="{% url 'rescue_list' %}" class="vm-btn-red mt-3">
+        <i class="bi bi-heart-fill me-2"></i>Back to Rescue
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const RESCUE_URL   = "{% url 'rescue_start' post.pk %}";
+const VERIFY_URL   = "{% url 'rescue_verify' %}";
+const MAX_QTY = {{ post.quantity }};
+
+// ── Camera ────────────────────────────────────────────────────
+(function() {
+  const overlay    = document.getElementById('rescuerOverlay');
+  const video      = document.getElementById('rescuerVideo');
+  const canvas     = document.getElementById('rescuerCanvas');
+  const captureBtn = document.getElementById('rescuerCaptureBtn');
+  const preview    = document.getElementById('rescuerPreview');
+  const hidden     = document.getElementById('id_rescuer_photo');
+  const retakeBtn  = document.getElementById('rescuerRetakeBtn');
+  let stream = null;
+
+  async function startCam() {
+    overlay.style.display = 'none';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      video.srcObject = stream;
+      video.style.display      = 'block';
+      captureBtn.style.display = 'inline-flex';
+      retakeBtn.style.display  = 'none';
+      preview.style.display    = 'none';
+      hidden.value = '';
+    } catch {
+      overlay.style.display = 'flex';
+      overlay.innerHTML = '<i class="bi bi-camera-video-off-fill"></i><span>Camera denied</span>';
+    }
+  }
+
+  overlay.addEventListener('click', startCam);
+
+  captureBtn.addEventListener('click', () => {
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    hidden.value = canvas.toDataURL('image/jpeg', 0.82);
+    preview.src  = hidden.value;
+    preview.style.display    = 'block';
+    video.style.display      = 'none';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display  = 'inline-flex';
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    const errEl = document.getElementById('err-rescuer_photo');
+    if (errEl) { errEl.textContent = ''; errEl.classList.add('d-none'); }
+  });
+
+  retakeBtn.addEventListener('click', startCam);
+})();
+
+// ── Step helpers ──────────────────────────────────────────────
+function setStep(n) {
+  document.getElementById('stepForm').style.display    = n === 1 ? '' : 'none';
+  document.getElementById('stepOTP').style.display     = n === 2 ? '' : 'none';
+  document.getElementById('stepSuccess').style.display = n === 3 ? '' : 'none';
+  [1,2,3].forEach(i => {
+    const el = document.getElementById('pstep' + i);
+    el.classList.toggle('active',    i === n);
+    el.classList.toggle('completed', i < n);
+  });
+  window.scrollTo(0, 0);
+}
+
+// ── Submit rescue form ────────────────────────────────────────
+document.getElementById('rescueForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn   = document.getElementById('rescueSubmitBtn');
+  const photo = document.getElementById('id_rescuer_photo').value;
+  const errPhoto = document.getElementById('err-rescuer_photo');
+
+  if (!photo || !photo.startsWith('data:image')) {
+    errPhoto.textContent = 'Please capture your face photo.';
+    errPhoto.classList.remove('d-none');
+    return;
+  }
+
+  // Validate quantity
+  const qtyInput = document.getElementById('id_quantity_kg');
+  const errQty   = document.getElementById('err-quantity_kg');
+  if (qtyInput && parseFloat(qtyInput.value) > MAX_QTY) {
+    errQty.textContent = `Cannot exceed available quantity (${MAX_QTY} kg).`;
+    errQty.classList.remove('d-none');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending OTP...';
+
+  const fd  = new FormData(e.target);
+  const res = await fetch(RESCUE_URL, {
+    method: 'POST',
+    headers: {'X-CSRFToken': fd.get('csrfmiddlewaretoken')},
+    body: fd,
+  });
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Send OTP & Confirm Rescue';
+
+  if (data.ok) {
+    document.getElementById('rescueOtpPhone').textContent = data.phone;
+    setStep(2);
+    document.getElementById('rescueOtpInput').focus();
+  } else {
+    Object.entries(data.errors || {}).forEach(([field, msg]) => {
+      const el = document.getElementById('err-' + field);
+      if (el) { el.textContent = msg.replace(/^\*\s*/, ''); el.classList.remove('d-none'); }
+    });
+  }
+});
+
+// ── Submit OTP ────────────────────────────────────────────────
+document.getElementById('rescueOtpForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('rescueOtpBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+
+  const fd = new FormData(e.target);
+  fd.set('otp_code', document.getElementById('rescueOtpInput').value);
+  const res  = await fetch(VERIFY_URL, {
+    method: 'POST',
+    headers: {'X-CSRFToken': fd.get('csrfmiddlewaretoken')},
+    body: fd,
+  });
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Confirm Rescue';
+
+  if (data.ok) {
+    document.getElementById('rescueSuccessMsg').textContent = data.message;
+    setStep(3);
+  } else {
+    const errEl = document.getElementById('err-rescue-otp');
+    errEl.textContent = (data.errors?.otp_code || data.errors?.__all__ || 'Invalid OTP.').replace(/^\*\s*/, '');
+    errEl.classList.remove('d-none');
+  }
+});
+
+document.getElementById('rescueOtpInput').addEventListener('input', function () {
+  if (this.value.length === 6) document.getElementById('rescueOtpForm').requestSubmit();
+});
+</script>
+{% endblock %}
