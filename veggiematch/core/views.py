@@ -25,10 +25,19 @@ def _sync_all_posts():
 
 
 def _cleanup_old_otps():
-    """Delete OTP records older than 24 hours to prevent DB bloat."""
+    """Delete OTP records older than 24 hours. Runs at most once per hour via a session timestamp."""
     from .models import OTPVerification
     cutoff = timezone.now() - timedelta(hours=24)
     OTPVerification.objects.filter(created_at__lt=cutoff).delete()
+
+
+def _maybe_cleanup_old_otps(request):
+    """Throttle OTP cleanup to once per hour using a session timestamp."""
+    last = request.session.get('_otp_cleanup_ts', 0)
+    now  = timezone.now().timestamp()
+    if now - last >= 3600:
+        _cleanup_old_otps()
+        request.session['_otp_cleanup_ts'] = now
 
 
 def _notify_expiring_posts():
@@ -97,6 +106,7 @@ def _clear_pending(request, key, photo_fields):
         del request.session[key]
 
 
+def _cleanup_expired_pending(request):
     """
     If a pending_* session key exists but its OTP has expired, delete the
     associated photo files and remove the session key so it doesn't linger.
@@ -136,7 +146,7 @@ def home(request):
     _sync_all_posts()
     _notify_expiring_posts()
     _cleanup_expired_pending(request)
-    _cleanup_old_otps()
+    _maybe_cleanup_old_otps(request)
     posts = VegetablePost.objects.filter(status=VegetablePost.STATUS_ACTIVE).order_by('expiry_time')
     impact = {
         'kg_rescued':   RescueRecord.objects.aggregate(total=Sum('quantity_kg'))['total'] or 0,

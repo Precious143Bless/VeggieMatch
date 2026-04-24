@@ -55,10 +55,20 @@ DATABASES = {
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
-STATIC_URL = '/static/'
-MEDIA_URL  = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+STATIC_URL  = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL   = '/media/'
+MEDIA_ROOT  = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ── HTTPS / security headers (active when DEBUG=False) ────────────────────────
+if not DEBUG:
+    SECURE_SSL_REDIRECT         = True
+    SECURE_HSTS_SECONDS         = 31536000   # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD         = True
+    SESSION_COOKIE_SECURE       = True
+    CSRF_COOKIE_SECURE          = True
 
 # Semaphore SMS (PH) — set in .env
 SEMAPHORE_API_KEY = os.getenv('SEMAPHORE_API_KEY', '')
