@@ -357,9 +357,8 @@ def buy_verify(request):
 
 def rescue_list(request):
     _sync_all_posts()
-    posts     = VegetablePost.objects.filter(status=VegetablePost.STATUS_RESCUE).order_by('expiry_time')
-    otp_form  = OTPForm()
-    return render(request, 'core/rescue.html', {'posts': posts, 'otp_form': otp_form})
+    posts = VegetablePost.objects.filter(status=VegetablePost.STATUS_RESCUE).order_by('expiry_time')
+    return render(request, 'core/donate.html', {'posts': posts})
 
 
 def rescue_start(request, post_id):
@@ -392,7 +391,7 @@ def rescue_start(request, post_id):
             errors = {f: e.as_text() for f, e in form.errors.items()}
             return JsonResponse({'ok': False, 'errors': errors})
     form = RescueForm()
-    return render(request, 'core/rescue_claim.html', {'form': form, 'post': post})
+    return render(request, 'core/donate_claim.html', {'form': form, 'post': post})
 
 
 def rescue_verify(request):
@@ -535,7 +534,7 @@ def post_edit_verify(request, post_id):
     post = get_object_or_404(VegetablePost, pk=post_id)
     if request.method == 'POST':
         otp_code = request.POST.get('otp_code', '')
-        if not verify_otp(post.phone_number, otp_code, 'EDIT'):
+        if not verify_otp(post.phone_number, otp_code, 'EDIT', post_id=post.pk):
             return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})
 
         # If additional edit fields are provided, save them
@@ -596,7 +595,7 @@ def post_delete_verify(request, post_id):
     post = get_object_or_404(VegetablePost, pk=post_id)
     if request.method == 'POST':
         otp_code = request.POST.get('otp_code', '')
-        if verify_otp(post.phone_number, otp_code, 'DELETE'):
+        if verify_otp(post.phone_number, otp_code, 'DELETE', post_id=post.pk):
             post.delete()
             return JsonResponse({'ok': True, 'message': 'Post deleted successfully.'})
         return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})

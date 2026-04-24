@@ -23,12 +23,13 @@ urlpatterns = [
     path('post/<int:post_id>/donate/verify/',  views.donate_verify,       name='donate_verify'),
     path('post/<int:post_id>/donate/',         views.donate_request,      name='donate_request'),
 
-    # Buy
-    path('buy/<int:post_id>/',                 views.buy_start,           name='buy_start'),
+    # Buy (verify before parameterised route)
     path('buy/verify/',                        views.buy_verify,          name='buy_verify'),
+    path('buy/<int:post_id>/',                 views.buy_start,           name='buy_start'),
 
-    # Rescue / Donate listings
+    # Rescue / Donate listings (verify before parameterised route)
     path('rescue/',                            views.rescue_list,         name='rescue_list'),
-    path('rescue/<int:post_id>/',              views.rescue_start,        name='rescue_start'),
     path('rescue/verify/',                     views.rescue_verify,       name='rescue_verify'),
+    path('rescue/<int:post_id>/',              views.rescue_start,        name='rescue_start'),
+
 ]

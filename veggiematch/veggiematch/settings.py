@@ -11,6 +11,7 @@ ALLOWED_HOSTS = ['192.168.254.106', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
+    'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',

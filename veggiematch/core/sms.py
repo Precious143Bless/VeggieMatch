@@ -139,16 +139,20 @@ def create_otp(phone_number, purpose, post_id=None):
     return {'ok': True, 'otp': otp}
 
 
-def verify_otp(phone_number, otp_code, purpose):
+def verify_otp(phone_number, otp_code, purpose, post_id=None):
     from core.models import OTPVerification
 
+    filters = dict(
+        phone_number=phone_number,
+        otp_code=otp_code,
+        purpose=purpose,
+        is_used=False,
+    )
+    if post_id is not None:
+        filters['post_id'] = post_id
+
     try:
-        otp = OTPVerification.objects.filter(
-            phone_number=phone_number,
-            otp_code=otp_code,
-            purpose=purpose,
-            is_used=False,
-        ).latest('created_at')
+        otp = OTPVerification.objects.filter(**filters).latest('created_at')
     except OTPVerification.DoesNotExist:
         return False
 
