@@ -167,7 +167,18 @@ def post_verify(request):
                 )
                 del request.session['pending_post']
                 label = f"{minutes // 60} hour{'s' if minutes >= 120 else ''}" if minutes >= 60 else f"{minutes} minute{'s' if minutes > 1 else ''}"
-                return JsonResponse({'ok': True, 'message': f"Your post is now live for {label}! Post ID: #{post.pk}"})
+                return JsonResponse({
+                    'ok':           True,
+                    'message':      f"Your post is now live for {label}!",
+                    'post_id':      post.pk,
+                    'vegetable':    post.vegetable,
+                    'quantity':     str(post.quantity),
+                    'price_per_kg': str(post.price_per_kg),
+                    'location':     post.get_full_location(),
+                    'expiry_label': label,
+                    'farmer_name':  post.farmer_name,
+                    'phone':        post.phone_number,
+                })
             else:
                 return JsonResponse({'ok': False, 'errors': {'otp_code': '* Invalid or expired OTP.'}})
         else:
@@ -252,7 +263,12 @@ def buy_verify(request):
                 del request.session['pending_buy']
                 return JsonResponse({
                     'ok': True,
-                    'message': f"Purchase confirmed! Pick up at: {post.get_full_location()}",
+                    'message':      f"Purchase confirmed! Pick up at: {post.get_full_location()}",
+                    'ref':          f"BUY-{post.pk:05d}",
+                    'vegetable':    post.vegetable,
+                    'quantity':     pending.get('quantity_kg', str(post.quantity)),
+                    'price_per_kg': str(post.price_per_kg),
+                    'location':     post.get_full_location(),
                     'farmer_name':  post.farmer_name,
                     'farmer_phone': post.phone_number,
                 })
@@ -377,7 +393,11 @@ def rescue_verify(request):
 
                 return JsonResponse({
                     'ok': True,
-                    'message': msg,
+                    'message':      msg,
+                    'ref':          f"CLAIM-{post.pk:05d}",
+                    'vegetable':    post.vegetable,
+                    'quantity':     str(qty_claimed),
+                    'location':     post.get_full_location(),
                     'farmer_name':  post.farmer_name,
                     'farmer_phone': post.phone_number,
                 })

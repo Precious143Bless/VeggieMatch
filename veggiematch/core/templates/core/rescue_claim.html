@@ -139,15 +139,31 @@
   <div id="stepSuccess" class="vm-post-step-content" style="display:none;">
     <div class="vm-success-card" style="border-top: 4px solid var(--red);">
       <div class="vm-success-icon">🎉</div>
-      <h3>Rescue Confirmed!</h3>
-      <p id="rescueSuccessMsg" class="text-muted"></p>
-      <div class="vm-farmer-contact-card" id="farmerContactCard" style="display:none;background:#fff5f5;border:1px solid #ffcdd2;border-radius:12px;padding:1rem;margin:1rem 0;text-align:left;">
-        <div style="font-weight:700;margin-bottom:0.4rem;"><i class="bi bi-person-fill me-1" style="color:var(--red);"></i>Farmer Contact</div>
-        <div id="farmerContactName" style="font-size:0.95rem;"></div>
-        <div id="farmerContactPhone" style="font-size:0.95rem;margin-top:0.25rem;"></div>
+      <h3>Claim Confirmed!</h3>
+      <p id="rescueSuccessMsg" class="text-muted mb-3"></p>
+
+      <!-- Claim receipt -->
+      <div id="claimReceipt" style="background:#fff5f5;border:1.5px solid #ffcdd2;border-radius:14px;padding:1.1rem;text-align:left;width:100%;margin-bottom:1rem;">
+        <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:0.5rem;">Claim Receipt</div>
+        <div style="font-weight:700;font-size:1.1rem;margin-bottom:0.6rem;" id="cl-rcpt-vegetable"></div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+          <span style="font-size:0.9rem;"><i class="bi bi-box-seam-fill me-1" style="color:var(--red);"></i><span id="cl-rcpt-quantity"></span> kg</span>
+          <span style="font-size:0.9rem;font-weight:700;color:var(--red);"><i class="bi bi-gift-fill me-1"></i>FREE</span>
+        </div>
+        <div style="font-size:0.88rem;color:#555;margin-bottom:0.4rem;"><i class="bi bi-geo-alt-fill me-1" style="color:var(--red);"></i><span id="cl-rcpt-location"></span></div>
+        <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed #ffcdd2;">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.3rem;color:#444;">Farmer Contact</div>
+          <div style="font-size:0.9rem;" id="cl-rcpt-farmer-name"></div>
+          <div style="font-size:0.9rem;margin-top:0.2rem;" id="cl-rcpt-farmer-phone"></div>
+        </div>
+        <div style="margin-top:0.7rem;padding-top:0.6rem;border-top:1px dashed #ffcdd2;font-size:0.78rem;color:#888;">
+          Ref: <span id="cl-rcpt-ref" style="font-family:monospace;"></span>
+        </div>
       </div>
-      <a href="{% url 'rescue_list' %}" class="vm-btn-red mt-3">
-        <i class="bi bi-heart-fill me-2"></i>Back to Rescue
+
+      <p class="text-muted small mb-3">Screenshot this receipt to show the farmer at pickup.</p>
+      <a href="{% url 'rescue_list' %}" class="vm-btn-red w-100">
+        <i class="bi bi-heart-fill me-2"></i>Back to Donate Items
       </a>
     </div>
   </div>
@@ -289,13 +305,13 @@ document.getElementById('rescueOtpForm').addEventListener('submit', async (e) =>
   btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Confirm Rescue';
 
   if (data.ok) {
-    document.getElementById('rescueSuccessMsg').textContent = data.message;
-    if (data.farmer_name && data.farmer_phone) {
-      const card = document.getElementById('farmerContactCard');
-      document.getElementById('farmerContactName').innerHTML = `<i class="bi bi-person-fill me-1"></i>${data.farmer_name}`;
-      document.getElementById('farmerContactPhone').innerHTML = `<i class="bi bi-telephone-fill me-1"></i><a href="tel:${data.farmer_phone}" style="color:var(--red);font-weight:600;">${data.farmer_phone}</a>`;
-      card.style.display = '';
-    }
+    document.getElementById('rescueSuccessMsg').textContent = data.message || 'Claim confirmed!';
+    document.getElementById('cl-rcpt-vegetable').textContent   = data.vegetable    || '';
+    document.getElementById('cl-rcpt-quantity').textContent    = data.quantity     || '';
+    document.getElementById('cl-rcpt-location').textContent    = data.location     || '';
+    document.getElementById('cl-rcpt-farmer-name').innerHTML   = data.farmer_name  ? `<i class="bi bi-person-fill me-1" style="color:var(--red);"></i>${data.farmer_name}` : '';
+    document.getElementById('cl-rcpt-farmer-phone').innerHTML  = data.farmer_phone ? `<i class="bi bi-telephone-fill me-1" style="color:var(--red);"></i><a href="tel:${data.farmer_phone}" style="color:var(--red);font-weight:600;">${data.farmer_phone}</a>` : '';
+    document.getElementById('cl-rcpt-ref').textContent         = data.ref          || '';
     setStep(3);
   } else {
     const errEl = document.getElementById('err-rescue-otp');

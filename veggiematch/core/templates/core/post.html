@@ -181,8 +181,26 @@
     <div class="vm-success-card">
       <div class="vm-success-icon">🎉</div>
       <h3>Post is Live!</h3>
-      <p id="postSuccessMsg" class="text-muted"></p>
-      <a href="{% url 'home' %}" class="vm-btn-green mt-3">
+      <p id="postSuccessMsg" class="text-muted mb-3"></p>
+
+      <!-- Post receipt -->
+      <div id="postReceipt" style="background:#f0faf4;border:1.5px solid #a3d9b1;border-radius:14px;padding:1.1rem;text-align:left;width:100%;margin-bottom:1rem;">
+        <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:0.5rem;">Post Receipt</div>
+        <div style="font-weight:700;font-size:1.1rem;margin-bottom:0.6rem;" id="rcpt-vegetable"></div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+          <span style="font-size:0.9rem;"><i class="bi bi-box-seam-fill text-success me-1"></i><span id="rcpt-quantity"></span> kg</span>
+          <span style="font-size:0.9rem;"><i class="bi bi-tag-fill text-success me-1"></i>₱<span id="rcpt-price"></span>/kg</span>
+        </div>
+        <div style="font-size:0.88rem;color:#555;margin-bottom:0.3rem;"><i class="bi bi-geo-alt-fill text-success me-1"></i><span id="rcpt-location"></span></div>
+        <div style="font-size:0.88rem;color:#555;margin-bottom:0.3rem;"><i class="bi bi-clock-fill text-warning me-1"></i>Live for <span id="rcpt-expiry"></span></div>
+        <div style="font-size:0.88rem;color:#555;"><i class="bi bi-person-fill text-success me-1"></i><span id="rcpt-farmer"></span></div>
+        <div style="margin-top:0.7rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;font-size:0.78rem;color:#888;">
+          Ref: <span id="rcpt-post-id" style="font-family:monospace;"></span>
+        </div>
+      </div>
+
+      <p class="text-muted small mb-3">Screenshot this as your record. Buyers will contact you when they claim.</p>
+      <a href="{% url 'home' %}" class="vm-btn-green w-100">
         <i class="bi bi-house-fill me-2"></i>Back to Home
       </a>
     </div>
@@ -332,6 +350,13 @@ document.getElementById('postOtpForm').addEventListener('submit', async (e) => {
 
   if (data.ok) {
     document.getElementById('postSuccessMsg').textContent = data.message;
+    document.getElementById('rcpt-vegetable').textContent = data.vegetable || '';
+    document.getElementById('rcpt-quantity').textContent  = data.quantity  || '';
+    document.getElementById('rcpt-price').textContent     = data.price_per_kg || '';
+    document.getElementById('rcpt-location').textContent  = data.location  || '';
+    document.getElementById('rcpt-expiry').textContent    = data.expiry_label || '';
+    document.getElementById('rcpt-farmer').textContent    = data.farmer_name  || '';
+    document.getElementById('rcpt-post-id').textContent   = data.post_id ? `POST-${String(data.post_id).padStart(5,'0')}` : '';
     setStep(3);
   } else {
     const errEl = document.getElementById('err-post-otp');
