@@ -11,7 +11,7 @@ from datetime import timedelta
 
 from .models import VegetablePost, BuyRecord, RescueRecord
 from .forms  import PostVegetableForm, OTPForm, BuyForm, RescueForm
-from .sms    import create_otp, verify_otp, send_buy_notification, send_buy_confirmation, send_rescue_notification, send_rescue_confirmation
+from .sms    import create_otp, verify_otp, send_buy_notification, send_buy_confirmation, send_rescue_notification, send_rescue_confirmation, send_expiry_warning
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -21,6 +21,30 @@ def _sync_all_posts():
         status=VegetablePost.STATUS_ACTIVE,
         expiry_time__lte=timezone.now()
     ).update(status=VegetablePost.STATUS_RESCUE)
+
+
+def _notify_expiring_posts():
+    """Send a one-time SMS warning to farmers whose active posts expire within 30 minutes."""
+    import threading
+    warning_window = timezone.now() + timedelta(minutes=30)
+    posts = VegetablePost.objects.filter(
+        status=VegetablePost.STATUS_ACTIVE,
+        expiry_time__lte=warning_window,
+        expiry_time__gt=timezone.now(),
+        expiry_notified=False,
+    )
+    if not posts.exists():
+        return
+    # Mark first to avoid duplicate sends if two requests race
+    ids = list(posts.values_list('pk', flat=True))
+    VegetablePost.objects.filter(pk__in=ids).update(expiry_notified=True)
+    for post in posts:
+        mins_left = max(1, int((post.expiry_time - timezone.now()).total_seconds() // 60))
+        threading.Thread(
+            target=send_expiry_warning,
+            args=(post.phone_number, post.farmer_name, post.vegetable, post.quantity, mins_left),
+            daemon=True,
+        ).start()
 
 
 def splash(request):
@@ -49,6 +73,7 @@ def _save_base64_image(b64_string, subfolder):
 
 def home(request):
     _sync_all_posts()
+    _notify_expiring_posts()
     posts = VegetablePost.objects.filter(status=VegetablePost.STATUS_ACTIVE).order_by('expiry_time')
     return render(request, 'core/home.html', {'posts': posts})
 
@@ -57,6 +82,7 @@ def home(request):
 
 def category(request):
     _sync_all_posts()
+    _notify_expiring_posts()
     level  = request.GET.get('level', '')
     posts  = VegetablePost.objects.filter(status=VegetablePost.STATUS_ACTIVE)
     if level in ('LOW', 'MEDIUM', 'HIGH'):

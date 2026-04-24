@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS `core_vegetablepost` (
   `status`          varchar(10)   NOT NULL DEFAULT 'ACTIVE',
   `created_at`      datetime(6)   NOT NULL,
   `expiry_time`     datetime(6)   NOT NULL,
+  `expiry_notified` tinyint(1)    NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `idx_post_status`  (`status`),
   KEY `idx_post_expiry`  (`expiry_time`)

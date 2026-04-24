@@ -25,6 +25,7 @@ class Migration(migrations.Migration):
                 ('status',         models.CharField(choices=[('ACTIVE','Active'),('BOUGHT','Bought'),('RESCUE','Available for Donate')], default='ACTIVE', max_length=10)),
                 ('created_at',     models.DateTimeField(auto_now_add=True)),
                 ('expiry_time',    models.DateTimeField()),
+                ('expiry_notified', models.BooleanField(default=False)),
             ],
             options={'db_table': 'core_vegetablepost'},
         ),

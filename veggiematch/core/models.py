@@ -34,6 +34,7 @@ class VegetablePost(models.Model):
     status         = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
     created_at     = models.DateTimeField(auto_now_add=True)
     expiry_time    = models.DateTimeField()
+    expiry_notified = models.BooleanField(default=False)  # True once the 30-min warning SMS is sent
 
     def is_expired(self):
         return timezone.now() >= self.expiry_time

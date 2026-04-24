@@ -104,6 +104,17 @@ def send_rescue_confirmation(claimer_phone, claimer_name, vegetable, quantity, f
     return _send_semaphore(claimer_phone, message)
 
 
+def send_expiry_warning(farmer_phone, farmer_name, vegetable, quantity, minutes_left):
+    """Warn farmer their post is about to expire so they can donate proactively."""
+    message = (
+        f"[VeggieMatch] Hi {farmer_name}, your post is expiring soon!\n"
+        f"Item: {vegetable} ({quantity} kg)\n"
+        f"Expires in: ~{minutes_left} minutes\n"
+        f"Tip: Open VeggieMatch and tap Donate to let the community claim it for free instead of wasting it."
+    )
+    return _send_semaphore(farmer_phone, message)
+
+
 def create_otp(phone_number, purpose, post_id=None):
     from core.models import OTPVerification
     import threading
