@@ -12,6 +12,7 @@ from datetime import timedelta
 from .models import VegetablePost, BuyRecord, RescueRecord
 from .forms  import PostVegetableForm, OTPForm, BuyForm, RescueForm
 from .sms    import create_otp, verify_otp, send_buy_notification, send_buy_confirmation, send_rescue_notification, send_rescue_confirmation, send_expiry_warning
+from django.db.models import Sum
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -117,7 +118,6 @@ def _cleanup_expired_pending(request):
 # ── Home ──────────────────────────────────────────────────────────────────────
 
 def home(request):
-    from django.db.models import Sum
     _sync_all_posts()
     _notify_expiring_posts()
     _cleanup_expired_pending(request)
@@ -242,6 +242,9 @@ def buy_start(request, post_id):
             d = form.cleaned_data
             if d['phone_number'] == post.phone_number:
                 return JsonResponse({'ok': False, 'errors': {'phone_number': 'You cannot buy your own post.'}})
+            # Duplicate buy guard — same phone can't buy the same post twice
+            if BuyRecord.objects.filter(post=post, buyer_number=d['phone_number']).exists():
+                return JsonResponse({'ok': False, 'errors': {'phone_number': 'You have already purchased from this post.'}})
             qty = d['quantity_kg']
             if qty > post.quantity:
                 return JsonResponse({'ok': False, 'errors': {'quantity_kg': f'Cannot exceed available quantity ({post.quantity} kg).'}})
