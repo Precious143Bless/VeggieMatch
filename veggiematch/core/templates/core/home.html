@@ -103,7 +103,15 @@
 
       <div class="vm-post-body">
         <div class="vm-post-name">{{ post.vegetable }}</div>
-        <div class="vm-post-farmer"><i class="bi bi-person-fill"></i> {{ post.farmer_name }}</div>
+        <div class="vm-post-farmer">
+          {% if post.farmer_photo %}
+            <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #a3d9b1;">
+          {% else %}
+            <i class="bi bi-person-fill"></i>
+          {% endif %}
+          {{ post.farmer_name }}
+        </div>
         <div class="vm-post-meta">
           <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg</span>
           <span><i class="bi bi-tag-fill"></i> ₱{{ post.price_per_kg }}/kg</span>

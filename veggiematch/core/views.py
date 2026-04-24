@@ -332,14 +332,16 @@ def buy_verify(request):
                     msg += f" ({float(post.quantity):g} kg still available.)"
                 return JsonResponse({
                     'ok': True,
-                    'message':      msg,
-                    'ref':          f"BUY-{post.pk:05d}",
-                    'vegetable':    post.vegetable,
-                    'quantity':     str(qty_bought),
-                    'price_per_kg': str(post.price_per_kg),
-                    'location':     post.get_full_location(),
-                    'farmer_name':  post.farmer_name,
-                    'farmer_phone': post.phone_number,
+                    'message':           msg,
+                    'ref':               f"BUY-{post.pk:05d}",
+                    'vegetable':         post.vegetable,
+                    'quantity':          str(qty_bought),
+                    'price_per_kg':      str(post.price_per_kg),
+                    'location':          post.get_full_location(),
+                    'farmer_name':       post.farmer_name,
+                    'farmer_phone':      post.phone_number,
+                    'farmer_photo_url':  post.farmer_photo.url if post.farmer_photo else '',
+                    'buyer_photo_url':   request.build_absolute_uri(settings.MEDIA_URL + buyer_photo) if buyer_photo else '',
                 })
             else:
                 return JsonResponse({'ok': False, 'errors': {'otp_code': '* Invalid or expired OTP.'}})
@@ -466,13 +468,15 @@ def rescue_verify(request):
 
                 return JsonResponse({
                     'ok': True,
-                    'message':      msg,
-                    'ref':          f"CLAIM-{post.pk:05d}",
-                    'vegetable':    post.vegetable,
-                    'quantity':     str(qty_claimed),
-                    'location':     post.get_full_location(),
-                    'farmer_name':  post.farmer_name,
-                    'farmer_phone': post.phone_number,
+                    'message':            msg,
+                    'ref':                f"CLAIM-{post.pk:05d}",
+                    'vegetable':          post.vegetable,
+                    'quantity':           str(qty_claimed),
+                    'location':           post.get_full_location(),
+                    'farmer_name':        post.farmer_name,
+                    'farmer_phone':       post.phone_number,
+                    'farmer_photo_url':   post.farmer_photo.url if post.farmer_photo else '',
+                    'claimer_photo_url':  request.build_absolute_uri(settings.MEDIA_URL + claimer_photo) if claimer_photo else '',
                 })
             else:
                 return JsonResponse({'ok': False, 'errors': {'otp_code': '* Invalid or expired OTP.'}})

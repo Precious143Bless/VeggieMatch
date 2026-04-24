@@ -145,8 +145,17 @@
         <div style="font-size:0.88rem;color:#555;margin-bottom:0.4rem;"><i class="bi bi-geo-alt-fill text-success me-1"></i><span id="buy-rcpt-location"></span></div>
         <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;">
           <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.3rem;color:#444;">Farmer Contact</div>
-          <div style="font-size:0.9rem;" id="buy-rcpt-farmer-name"></div>
-          <div style="font-size:0.9rem;margin-top:0.2rem;" id="buy-rcpt-farmer-phone"></div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
+            <img id="buy-rcpt-farmer-photo" src="" alt="" style="display:none;width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #a3d9b1;">
+            <div>
+              <div style="font-size:0.9rem;" id="buy-rcpt-farmer-name"></div>
+              <div style="font-size:0.9rem;margin-top:0.2rem;" id="buy-rcpt-farmer-phone"></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.3rem;color:#444;">Your Photo on Record</div>
+          <img id="buy-rcpt-buyer-photo" src="" alt="Your photo" style="display:none;width:56px;height:56px;border-radius:10px;object-fit:cover;border:2px solid #a3d9b1;">
         </div>
         <div style="margin-top:0.7rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;font-size:0.78rem;color:#888;">
           Ref: <span id="buy-rcpt-ref" style="font-family:monospace;"></span>
@@ -306,6 +315,14 @@ document.getElementById('buyOtpForm').addEventListener('submit', async (e) => {
     document.getElementById('buy-rcpt-farmer-name').innerHTML    = data.farmer_name  ? `<i class="bi bi-person-fill me-1" style="color:var(--green);"></i>${data.farmer_name}` : '';
     document.getElementById('buy-rcpt-farmer-phone').innerHTML   = data.farmer_phone ? `<i class="bi bi-telephone-fill me-1" style="color:var(--green);"></i><a href="tel:${data.farmer_phone}" style="color:var(--green);font-weight:600;">${data.farmer_phone}</a>` : '';
     document.getElementById('buy-rcpt-ref').textContent          = data.ref          || '';
+    if (data.farmer_photo_url) {
+      const fp = document.getElementById('buy-rcpt-farmer-photo');
+      fp.src = data.farmer_photo_url; fp.style.display = '';
+    }
+    if (data.buyer_photo_url) {
+      const bp = document.getElementById('buy-rcpt-buyer-photo');
+      bp.src = data.buyer_photo_url; bp.style.display = '';
+    }
     setStep(3);
   } else {
     const errEl = document.getElementById('err-buy-otp');
