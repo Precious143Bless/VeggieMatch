@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS `core_rescuerecord` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── core_otpverification ──────────────────────────────────────
+-- purpose: POST | BUY | RESCUE | DONATE | EDIT | DELETE
 CREATE TABLE IF NOT EXISTS `core_otpverification` (
   `id`           bigint      NOT NULL AUTO_INCREMENT,
   `phone_number` varchar(20) NOT NULL,

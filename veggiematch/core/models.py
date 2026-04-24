@@ -9,7 +9,7 @@ class VegetablePost(models.Model):
     STATUS_CHOICES = [
         (STATUS_ACTIVE, 'Active'),
         (STATUS_BOUGHT, 'Bought'),
-        (STATUS_RESCUE, 'Available for Rescue'),
+        (STATUS_RESCUE, 'Available for Donate'),
     ]
 
     SURPLUS_LOW    = 'LOW'
