@@ -145,12 +145,6 @@ def posted_veggies(request):
     return render(request, 'core/posted_veggies.html', {'posts': posts})
 
 
-def post_detail(request, post_id):
-    _sync_all_posts()
-    post     = get_object_or_404(VegetablePost, pk=post_id)
-    otp_form = OTPForm()
-    return render(request, 'core/post_detail.html', {'post': post, 'otp_form': otp_form})
-
 
 # ── Post Vegetable ─────────────────────────────────────────────────────────────
 

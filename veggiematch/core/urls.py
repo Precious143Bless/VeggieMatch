@@ -6,7 +6,6 @@ urlpatterns = [
     path('home/',                              views.home,                name='home'),
     path('category/',                          views.category,            name='category'),
     path('posted/',                            views.posted_veggies,      name='posted_veggies'),
-    path('posted/<int:post_id>/',              views.post_detail,         name='post_detail'),
 
     # Post vegetable
     path('post/',                              views.post_vegetable,      name='post_vegetable'),
@@ -28,8 +27,13 @@ urlpatterns = [
     path('buy/<int:post_id>/',                 views.buy_start,           name='buy_start'),
     path('buy/verify/',                        views.buy_verify,          name='buy_verify'),
 
-    # Rescue
+    # Rescue / Donate listings
     path('rescue/',                            views.rescue_list,         name='rescue_list'),
     path('rescue/<int:post_id>/',              views.rescue_start,        name='rescue_start'),
     path('rescue/verify/',                     views.rescue_verify,       name='rescue_verify'),
+
+    # Farmer dashboard (OTP-gated, no login)
+    path('dashboard/',                         views.dashboard_request,   name='dashboard_request'),
+    path('dashboard/verify/',                  views.dashboard_verify,    name='dashboard_verify'),
+    path('dashboard/posts/',                   views.dashboard_posts,     name='dashboard_posts'),
 ]
