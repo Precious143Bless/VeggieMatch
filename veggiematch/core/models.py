@@ -58,8 +58,9 @@ class VegetablePost(models.Model):
 
 
 class BuyRecord(models.Model):
-    """Buyer purchases vegetables from an active post."""
-    post         = models.OneToOneField(VegetablePost, on_delete=models.CASCADE, related_name='buy')
+    """Buyer purchases vegetables from an active post.
+    Multiple buyers can take partial quantities until the post is fully bought."""
+    post         = models.ForeignKey(VegetablePost, on_delete=models.CASCADE, related_name='buys')
     buyer_name   = models.CharField(max_length=100)
     buyer_number = models.CharField(max_length=20)
     buyer_photo  = models.ImageField(upload_to='faces/buyers/', blank=True, null=True)
@@ -85,21 +86,21 @@ class RescueRecord(models.Model):
 
 
 class OTPVerification(models.Model):
-    PURPOSE_POST      = 'POST'
-    PURPOSE_BUY       = 'BUY'
-    PURPOSE_RESCUE    = 'RESCUE'
-    PURPOSE_DONATE    = 'DONATE'
-    PURPOSE_EDIT      = 'EDIT'
-    PURPOSE_DELETE    = 'DELETE'
-    PURPOSE_DASHBOARD = 'DASHBOARD'
+    PURPOSE_POST   = 'POST'
+    PURPOSE_BUY    = 'BUY'
+    PURPOSE_RESCUE = 'RESCUE'
+    PURPOSE_DONATE = 'DONATE'
+    PURPOSE_EDIT   = 'EDIT'
+    PURPOSE_DELETE = 'DELETE'
+    PURPOSE_MANAGE = 'MANAGE'
     PURPOSE_CHOICES = [
-        (PURPOSE_POST,      'Post'),
-        (PURPOSE_BUY,       'Buy'),
-        (PURPOSE_RESCUE,    'Rescue'),
-        (PURPOSE_DONATE,    'Donate'),
-        (PURPOSE_EDIT,      'Edit'),
-        (PURPOSE_DELETE,    'Delete'),
-        (PURPOSE_DASHBOARD, 'Dashboard'),
+        (PURPOSE_POST,   'Post'),
+        (PURPOSE_BUY,    'Buy'),
+        (PURPOSE_RESCUE, 'Rescue'),
+        (PURPOSE_DONATE, 'Donate'),
+        (PURPOSE_EDIT,   'Edit'),
+        (PURPOSE_DELETE, 'Delete'),
+        (PURPOSE_MANAGE, 'Manage'),
     ]
 
     phone_number = models.CharField(max_length=20)

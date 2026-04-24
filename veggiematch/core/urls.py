@@ -11,6 +11,10 @@ urlpatterns = [
     path('post/',                              views.post_vegetable,      name='post_vegetable'),
     path('post/verify/',                       views.post_verify,         name='post_verify'),
 
+    # Manage (single OTP unlocks donate/edit/delete for a post)
+    path('post/<int:post_id>/manage/',         views.manage_request,      name='manage_request'),
+    path('post/<int:post_id>/manage/verify/',  views.manage_verify,       name='manage_verify'),
+
     # Edit (verify must come before the base path)
     path('post/<int:post_id>/edit/verify/',    views.post_edit_verify,    name='post_edit_verify'),
     path('post/<int:post_id>/edit/',           views.post_edit_request,   name='post_edit_request'),

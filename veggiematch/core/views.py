@@ -519,9 +519,11 @@ def rescue_verify(request):
 # ── Donate (farmer moves post to rescue) ─────────────────────────────────────
 
 def donate_request(request, post_id):
-    """AJAX: send OTP to farmer's number to verify they own the post."""
+    """AJAX: send OTP to farmer's number to verify they own the post, or skip if manage-unlocked."""
     post = get_object_or_404(VegetablePost, pk=post_id, status=VegetablePost.STATUS_ACTIVE)
     if request.method == 'POST':
+        if post.pk in request.session.get('manage_unlocked', []):
+            return JsonResponse({'ok': True, 'phone': post.phone_number, 'skip_otp': True})
         result = create_otp(post.phone_number, 'DONATE', post_id=post.pk)
         if not result['ok']:
             return JsonResponse({'ok': False, 'error': result['error']})
@@ -530,11 +532,12 @@ def donate_request(request, post_id):
 
 
 def donate_verify(request, post_id):
-    """AJAX: verify OTP then move post to rescue."""
+    """AJAX: verify OTP (or use manage session) then move post to rescue."""
     post = get_object_or_404(VegetablePost, pk=post_id, status=VegetablePost.STATUS_ACTIVE)
     if request.method == 'POST':
         otp_code = request.POST.get('otp_code', '')
-        if verify_otp(post.phone_number, otp_code, 'DONATE', post_id=post.pk):
+        unlocked = post.pk in request.session.get('manage_unlocked', [])
+        if unlocked or verify_otp(post.phone_number, otp_code, 'DONATE', post_id=post.pk):
             post.status = VegetablePost.STATUS_RESCUE
             post.save(update_fields=['status'])
             return JsonResponse({'ok': True, 'message': 'Post moved to Donate. Community kitchens can now claim it for free.'})
@@ -543,14 +546,47 @@ def donate_verify(request, post_id):
 
 
 
+# ── Manage Post (single OTP unlocks donate/edit/delete) ──────────────────────
+
+def manage_request(request, post_id):
+    """AJAX: send OTP to farmer to unlock manage actions."""
+    post = get_object_or_404(VegetablePost, pk=post_id)
+    if post.status in (VegetablePost.STATUS_BOUGHT, VegetablePost.STATUS_CLAIMED):
+        return JsonResponse({'ok': False, 'error': 'This post has already been completed.'})
+    if request.method == 'POST':
+        result = create_otp(post.phone_number, 'MANAGE', post_id=post.pk)
+        if not result['ok']:
+            return JsonResponse({'ok': False, 'error': result['error']})
+        return JsonResponse({'ok': True, 'phone': post.phone_number})
+    return JsonResponse({'ok': False})
+
+
+def manage_verify(request, post_id):
+    """AJAX: verify OTP then store manage token in session."""
+    post = get_object_or_404(VegetablePost, pk=post_id)
+    if request.method == 'POST':
+        otp_code = request.POST.get('otp_code', '')
+        if verify_otp(post.phone_number, otp_code, 'MANAGE', post_id=post.pk):
+            # Store unlocked post id in session — expires with session
+            unlocked = request.session.get('manage_unlocked', [])
+            if post.pk not in unlocked:
+                unlocked.append(post.pk)
+            request.session['manage_unlocked'] = unlocked
+            return JsonResponse({'ok': True})
+        return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})
+    return JsonResponse({'ok': False})
+
+
 # ── Edit Post ─────────────────────────────────────────────────────────────────
 
 def post_edit_request(request, post_id):
-    """AJAX: send OTP to farmer to verify ownership before editing."""
+    """AJAX: send OTP to farmer to verify ownership before editing, or skip if manage-unlocked."""
     post = get_object_or_404(VegetablePost, pk=post_id)
     if post.status in (VegetablePost.STATUS_BOUGHT, VegetablePost.STATUS_CLAIMED):
         return JsonResponse({'ok': False, 'error': 'Cannot edit a post that has already been completed.'})
     if request.method == 'POST':
+        if post.pk in request.session.get('manage_unlocked', []):
+            return JsonResponse({'ok': True, 'phone': post.phone_number, 'skip_otp': True})
         result = create_otp(post.phone_number, 'EDIT', post_id=post.pk)
         if not result['ok']:
             return JsonResponse({'ok': False, 'error': result['error']})
@@ -559,11 +595,12 @@ def post_edit_request(request, post_id):
 
 
 def post_edit_verify(request, post_id):
-    """AJAX: verify OTP then return post data for editing, or save edits."""
+    """AJAX: verify OTP (or use manage session) then save edits."""
     post = get_object_or_404(VegetablePost, pk=post_id)
     if request.method == 'POST':
         otp_code = request.POST.get('otp_code', '')
-        if not verify_otp(post.phone_number, otp_code, 'EDIT', post_id=post.pk):
+        unlocked = post.pk in request.session.get('manage_unlocked', [])
+        if not unlocked and not verify_otp(post.phone_number, otp_code, 'EDIT', post_id=post.pk):
             return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})
 
         # If additional edit fields are provided, save them
@@ -607,11 +644,13 @@ def post_edit_verify(request, post_id):
 # ── Delete Post ───────────────────────────────────────────────────────────────
 
 def post_delete_request(request, post_id):
-    """AJAX: send OTP to farmer to verify ownership before deleting."""
+    """AJAX: send OTP to farmer to verify ownership before deleting, or skip if manage-unlocked."""
     post = get_object_or_404(VegetablePost, pk=post_id)
     if post.status in (VegetablePost.STATUS_BOUGHT, VegetablePost.STATUS_CLAIMED):
         return JsonResponse({'ok': False, 'error': 'Cannot delete a post that has already been completed.'})
     if request.method == 'POST':
+        if post.pk in request.session.get('manage_unlocked', []):
+            return JsonResponse({'ok': True, 'phone': post.phone_number, 'skip_otp': True})
         result = create_otp(post.phone_number, 'DELETE', post_id=post.pk)
         if not result['ok']:
             return JsonResponse({'ok': False, 'error': result['error']})
@@ -620,11 +659,17 @@ def post_delete_request(request, post_id):
 
 
 def post_delete_verify(request, post_id):
-    """AJAX: verify OTP then delete the post."""
+    """AJAX: verify OTP (or use manage session) then delete the post."""
     post = get_object_or_404(VegetablePost, pk=post_id)
     if request.method == 'POST':
         otp_code = request.POST.get('otp_code', '')
-        if verify_otp(post.phone_number, otp_code, 'DELETE', post_id=post.pk):
+        unlocked = post.pk in request.session.get('manage_unlocked', [])
+        if unlocked or verify_otp(post.phone_number, otp_code, 'DELETE', post_id=post.pk):
+            # Remove from unlocked list after delete
+            unlocked_list = request.session.get('manage_unlocked', [])
+            if post.pk in unlocked_list:
+                unlocked_list.remove(post.pk)
+                request.session['manage_unlocked'] = unlocked_list
             post.delete()
             return JsonResponse({'ok': True, 'message': 'Post deleted successfully.'})
         return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})
