@@ -141,8 +141,7 @@ def category(request):
 
 def posted_veggies(request):
     _sync_all_posts()
-    # Show all posts so farmers can see completed transactions with buyer/claimer info
-    posts = VegetablePost.objects.order_by('-created_at').prefetch_related('buys', 'rescues')
+    posts = VegetablePost.objects.filter(status=VegetablePost.STATUS_ACTIVE).order_by('-created_at')
     return render(request, 'core/posted_veggies.html', {'posts': posts})
 
 
@@ -309,13 +308,14 @@ def buy_verify(request):
                         quantity_kg  = qty_bought,
                     )
                 send_buy_notification(
-                    farmer_phone = post.phone_number,
-                    buyer_name   = pending['buyer_name'],
-                    buyer_phone  = pending['phone_number'],
-                    vegetable    = post.vegetable,
-                    quantity     = qty_bought,
-                    price_per_kg = post.price_per_kg,
-                    location     = post.get_full_location(),
+                    farmer_phone     = post.phone_number,
+                    buyer_name       = pending['buyer_name'],
+                    buyer_phone      = pending['phone_number'],
+                    vegetable        = post.vegetable,
+                    quantity         = qty_bought,
+                    price_per_kg     = post.price_per_kg,
+                    location         = post.get_full_location(),
+                    buyer_photo_url  = request.build_absolute_uri(settings.MEDIA_URL + buyer_photo) if buyer_photo else '',
                 )
                 send_buy_confirmation(
                     buyer_phone  = pending['phone_number'],
@@ -445,12 +445,13 @@ def rescue_verify(request):
 
                 remaining = float(post.quantity)
                 send_rescue_notification(
-                    farmer_phone   = post.phone_number,
-                    claimer_name   = pending['claimer_name'],
-                    claimer_phone  = pending['phone_number'],
-                    vegetable      = post.vegetable,
-                    quantity       = qty_claimed,
-                    location       = post.get_full_location(),
+                    farmer_phone        = post.phone_number,
+                    claimer_name        = pending['claimer_name'],
+                    claimer_phone       = pending['phone_number'],
+                    vegetable           = post.vegetable,
+                    quantity            = qty_claimed,
+                    location            = post.get_full_location(),
+                    claimer_photo_url   = request.build_absolute_uri(settings.MEDIA_URL + claimer_photo) if claimer_photo else '',
                 )
                 send_rescue_confirmation(
                     claimer_phone  = pending['phone_number'],

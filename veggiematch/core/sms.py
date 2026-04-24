@@ -52,7 +52,7 @@ def send_otp(phone_number, otp_code, purpose):
     return _send_semaphore(phone_number, message_map.get(purpose, f"[VeggieMatch] Your OTP: {otp_code}"))
 
 
-def send_buy_notification(farmer_phone, buyer_name, buyer_phone, vegetable, quantity, price_per_kg, location):
+def send_buy_notification(farmer_phone, buyer_name, buyer_phone, vegetable, quantity, price_per_kg, location, buyer_photo_url=''):
     """Notify farmer when their post is bought."""
     message = (
         f"[VeggieMatch] Your post was bought!\n"
@@ -62,6 +62,8 @@ def send_buy_notification(farmer_phone, buyer_name, buyer_phone, vegetable, quan
         f"Pickup: {location}\n"
         f"Please prepare for pickup."
     )
+    if buyer_photo_url:
+        message += f"\nBuyer Photo: {buyer_photo_url}"
     return _send_semaphore(farmer_phone, message)
 
 
@@ -78,7 +80,7 @@ def send_buy_confirmation(buyer_phone, buyer_name, vegetable, quantity, price_pe
     return _send_semaphore(buyer_phone, message)
 
 
-def send_rescue_notification(farmer_phone, claimer_name, claimer_phone, vegetable, quantity, location):
+def send_rescue_notification(farmer_phone, claimer_name, claimer_phone, vegetable, quantity, location, claimer_photo_url=''):
     """Notify farmer when their donated post is claimed."""
     message = (
         f"[VeggieMatch] Your donated post was claimed!\n"
@@ -88,6 +90,8 @@ def send_rescue_notification(farmer_phone, claimer_name, claimer_phone, vegetabl
         f"Pickup: {location}\n"
         f"Thank you for donating!"
     )
+    if claimer_photo_url:
+        message += f"\nClaimer Photo: {claimer_photo_url}"
     return _send_semaphore(farmer_phone, message)
 
 
