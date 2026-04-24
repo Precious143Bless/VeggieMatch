@@ -69,8 +69,10 @@
           <span><i class="bi bi-tag-fill"></i> ₱{{ post.price_per_kg }}/kg</span>
         </div>
         <div class="vm-post-timer">
-          <i class="bi bi-clock-fill"></i>
-          <span class="vm-timer" data-expiry="{{ post.expiry_time|date:'c' }}">calculating...</span>
+          <i class="bi bi-calendar-check-fill"></i>
+          <span>Posted {{ post.created_at|date:"M d, Y g:i A" }}</span>
+          {# hidden timer keeps auto-remove logic alive #}
+          <span class="vm-timer d-none" data-expiry="{{ post.expiry_time|date:'c' }}"></span>
         </div>
         <div class="vm-post-actions">
           <a href="{% url 'buy_start' post.pk %}" class="vm-claim-btn">
