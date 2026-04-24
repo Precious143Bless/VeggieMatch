@@ -187,16 +187,21 @@ const MAX_QTY      = {{ post.quantity }};
     overlay.style.display = 'none';
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-      video.srcObject = stream;
-      video.style.display   = 'block';
-      capBtn.style.display  = 'inline-flex';
-      retake.style.display  = 'none';
-      preview.style.display = 'none';
-      hidden.value = '';
     } catch {
-      overlay.style.display = 'flex';
-      overlay.innerHTML = '<i class="bi bi-camera-video-off-fill"></i><span>Camera denied</span>';
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch {
+        overlay.style.display = 'flex';
+        overlay.innerHTML = '<i class="bi bi-camera-video-off-fill"></i><span>Camera denied</span>';
+        return;
+      }
     }
+    video.srcObject = stream;
+    video.style.display   = 'block';
+    capBtn.style.display  = 'inline-flex';
+    retake.style.display  = 'none';
+    preview.style.display = 'none';
+    hidden.value = '';
   }
   overlay.addEventListener('click', startCam);
   capBtn.addEventListener('click', () => {

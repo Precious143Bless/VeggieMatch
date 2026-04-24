@@ -119,20 +119,6 @@ def create_otp(phone_number, purpose, post_id=None):
     from core.models import OTPVerification
     import threading
 
-    now      = timezone.now()
-    one_hour = now - timedelta(hours=1)
-    one_min  = now - timedelta(seconds=60)
-
-    # ── Max 5 sends per phone per hour ───────────────────────
-    if OTPVerification.objects.filter(phone_number=phone_number, created_at__gte=one_hour).count() >= 5:
-        return {'ok': False, 'error': 'Too many OTP requests. Please wait an hour before trying again.'}
-
-    # ── 60-second cooldown between sends ─────────────────────
-    last = OTPVerification.objects.filter(phone_number=phone_number, created_at__gte=one_min).order_by('-created_at').first()
-    if last:
-        wait = 60 - int((now - last.created_at).total_seconds())
-        return {'ok': False, 'error': f'Please wait {wait} seconds before requesting another OTP.'}
-
     OTPVerification.objects.filter(
         phone_number=phone_number, purpose=purpose, is_used=False
     ).update(is_used=True)
@@ -143,7 +129,7 @@ def create_otp(phone_number, purpose, post_id=None):
         otp_code     = code,
         purpose      = purpose,
         post_id      = post_id,
-        expires_at   = now + timedelta(minutes=settings.OTP_EXPIRY_MINUTES),
+        expires_at   = timezone.now() + timedelta(minutes=settings.OTP_EXPIRY_MINUTES),
     )
     threading.Thread(target=send_otp, args=(phone_number, code, purpose), daemon=True).start()
     return {'ok': True, 'otp': otp}
