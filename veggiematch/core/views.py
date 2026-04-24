@@ -117,11 +117,17 @@ def _cleanup_expired_pending(request):
 # ── Home ──────────────────────────────────────────────────────────────────────
 
 def home(request):
+    from django.db.models import Sum
     _sync_all_posts()
     _notify_expiring_posts()
     _cleanup_expired_pending(request)
     posts = VegetablePost.objects.filter(status=VegetablePost.STATUS_ACTIVE).order_by('expiry_time')
-    return render(request, 'core/home.html', {'posts': posts})
+    impact = {
+        'kg_rescued':   RescueRecord.objects.aggregate(total=Sum('quantity_kg'))['total'] or 0,
+        'posts_donated': VegetablePost.objects.filter(status__in=[VegetablePost.STATUS_RESCUE, VegetablePost.STATUS_CLAIMED]).count(),
+        'kg_sold':      BuyRecord.objects.aggregate(total=Sum('quantity_kg'))['total'] or 0,
+    }
+    return render(request, 'core/home.html', {'posts': posts, 'impact': impact})
 
 
 # ── Category ──────────────────────────────────────────────────────────────────
