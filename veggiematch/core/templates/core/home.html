@@ -163,6 +163,7 @@
         <p class="text-muted mb-1" style="font-size:0.9rem;"><strong id="donateVeggieName"></strong></p>
         <p class="text-muted mb-3" style="font-size:0.85rem;">We'll send an OTP to your registered number to confirm.</p>
         <div id="donateStep1">
+          <div class="vm-err d-none mb-2 justify-content-center" id="err-donate-otp"></div>
           <div class="d-flex gap-2 justify-content-center">
             <button class="vm-btn-green px-4" id="sendDonateOtpBtn"><i class="bi bi-send-fill me-1"></i> Send OTP</button>
             <button class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
@@ -171,7 +172,7 @@
         <div id="donateStep2" style="display:none;">
           <p class="text-muted small mb-2">OTP sent to <strong id="donatePhoneDisplay"></strong></p>
           <input type="text" id="donateOtpInput" class="otp-input form-control mb-2" maxlength="6" inputmode="numeric" placeholder="_ _ _ _ _ _">
-          <div class="vm-err d-none mb-2 justify-content-center" id="err-donate-otp"></div>
+          <div class="vm-err d-none mb-2 justify-content-center" id="err-donate-otp-verify"></div>
           <button class="vm-btn-green w-100" id="confirmDonateOtpBtn"><i class="bi bi-check-circle-fill me-1"></i> Confirm Donate</button>
         </div>
         <div id="donateStep3" style="display:none;">
@@ -305,19 +306,29 @@ document.querySelectorAll('.btn-donate-open').forEach(btn => {
     ['donateStep1','donateStep2','donateStep3'].forEach((id,i) => document.getElementById(id).style.display = i===0?'':'none');
     document.getElementById('donateOtpInput').value = '';
     const e = document.getElementById('err-donate-otp'); e.textContent=''; e.classList.add('d-none');
+    const e2 = document.getElementById('err-donate-otp-verify'); e2.textContent=''; e2.classList.add('d-none');
     new bootstrap.Modal(document.getElementById('donateModal')).show();
   });
 });
 document.getElementById('sendDonateOtpBtn').addEventListener('click', async () => {
   const btn = document.getElementById('sendDonateOtpBtn');
+  const errEl = document.getElementById('err-donate-otp');
   btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
   const res = await fetch(`/post/${donatePostId}/donate/`, {method:'POST',headers:{'X-CSRFToken':csrf(),'Content-Type':'application/x-www-form-urlencoded'},body:''});
   const data = await res.json();
   btn.disabled=false; btn.innerHTML='<i class="bi bi-send-fill me-1"></i> Send OTP';
-  if(data.ok){document.getElementById('donatePhoneDisplay').textContent=data.phone;document.getElementById('donateStep1').style.display='none';document.getElementById('donateStep2').style.display='';document.getElementById('donateOtpInput').focus();}
+  if(data.ok){
+    document.getElementById('donatePhoneDisplay').textContent=data.phone;
+    document.getElementById('donateStep1').style.display='none';
+    document.getElementById('donateStep2').style.display='';
+    document.getElementById('donateOtpInput').focus();
+  } else {
+    errEl.textContent = data.error || 'Failed to send OTP. Please try again.';
+    errEl.classList.remove('d-none');
+  }
 });
 document.getElementById('confirmDonateOtpBtn').addEventListener('click', async () => {
-  const btn=document.getElementById('confirmDonateOtpBtn'),errEl=document.getElementById('err-donate-otp');
+  const btn=document.getElementById('confirmDonateOtpBtn'),errEl=document.getElementById('err-donate-otp-verify');
   btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Verifying...';
   const fd=new FormData(); fd.append('otp_code',document.getElementById('donateOtpInput').value);
   const res=await fetch(`/post/${donatePostId}/donate/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
