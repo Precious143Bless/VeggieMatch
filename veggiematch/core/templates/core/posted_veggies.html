@@ -45,12 +45,20 @@
         {% else %}
           <div class="vm-post-img-placeholder">🥬</div>
         {% endif %}
-        {% if post.surplus_level == 'LOW' %}
-          <span class="vm-surplus-badge low">🟡 Low</span>
-        {% elif post.surplus_level == 'MEDIUM' %}
-          <span class="vm-surplus-badge medium">🟠 Medium</span>
-        {% else %}
-          <span class="vm-surplus-badge high">🔴 High</span>
+        {% if post.status == 'ACTIVE' %}
+          {% if post.surplus_level == 'LOW' %}
+            <span class="vm-surplus-badge low">🟡 Low</span>
+          {% elif post.surplus_level == 'MEDIUM' %}
+            <span class="vm-surplus-badge medium">🟠 Medium</span>
+          {% else %}
+            <span class="vm-surplus-badge high">🔴 High</span>
+          {% endif %}
+        {% elif post.status == 'BOUGHT' %}
+          <span class="vm-surplus-badge" style="background:#1565c0;color:#fff;">✅ Sold</span>
+        {% elif post.status == 'RESCUE' %}
+          <span class="vm-surplus-badge" style="background:#e65100;color:#fff;">🍲 Donating</span>
+        {% elif post.status == 'CLAIMED' %}
+          <span class="vm-surplus-badge" style="background:#6a1b9a;color:#fff;">🎁 Claimed</span>
         {% endif %}
       </div>
 
@@ -68,20 +76,69 @@
           <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg</span>
           <span><i class="bi bi-tag-fill"></i> ₱{{ post.price_per_kg }}/kg</span>
         </div>
+
+        {% if post.status == 'ACTIVE' or post.status == 'RESCUE' %}
         <div class="vm-post-timer">
           <i class="bi bi-clock-fill"></i>
           <span class="vm-timer" data-expiry="{{ post.expiry_time|date:'c' }}">calculating...</span>
         </div>
-        <div class="vm-post-actions">
+        {% endif %}
+
+        <!-- Buyer info for sold posts -->
+        {% if post.status == 'BOUGHT' %}
+          {% for rec in post.buys.all %}
+          <div style="margin-top:0.4rem;padding:0.5rem 0.6rem;background:#e3f2fd;border-radius:10px;">
+            <div style="font-size:0.72rem;color:#1565c0;font-weight:700;margin-bottom:0.3rem;">🛒 BUYER</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              {% if rec.buyer_photo %}
+                <img src="{{ rec.buyer_photo.url }}" alt="{{ rec.buyer_name }}"
+                     style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid #90caf9;flex-shrink:0;">
+              {% endif %}
+              <div>
+                <div style="font-size:0.88rem;font-weight:600;">{{ rec.buyer_name }}</div>
+                <div style="font-size:0.82rem;color:#555;">
+                  <a href="tel:{{ rec.buyer_number }}" style="color:#1565c0;">{{ rec.buyer_number }}</a>
+                  &nbsp;·&nbsp; {{ rec.quantity_kg }} kg
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% endif %}
+
+        <!-- Claimer info for donated/claimed posts -->
+        {% if post.status == 'CLAIMED' or post.status == 'RESCUE' %}
+          {% for rec in post.rescues.all %}
+          <div style="margin-top:0.4rem;padding:0.5rem 0.6rem;background:#f3e5f5;border-radius:10px;">
+            <div style="font-size:0.72rem;color:#6a1b9a;font-weight:700;margin-bottom:0.3rem;">🎁 CLAIMER</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              {% if rec.claimer_photo %}
+                <img src="{{ rec.claimer_photo.url }}" alt="{{ rec.claimer_name }}"
+                     style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid #ce93d8;flex-shrink:0;">
+              {% endif %}
+              <div>
+                <div style="font-size:0.88rem;font-weight:600;">{{ rec.claimer_name }}</div>
+                <div style="font-size:0.82rem;color:#555;">
+                  <a href="tel:{{ rec.claimer_number }}" style="color:#6a1b9a;">{{ rec.claimer_number }}</a>
+                  &nbsp;·&nbsp; {{ rec.quantity_kg }} kg
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% endif %}
+
+        {% if post.status == 'ACTIVE' or post.status == 'RESCUE' %}
+        <div class="vm-post-actions" style="margin-top:0.5rem;">
+          {% if post.status == 'ACTIVE' %}
           <a href="{% url 'buy_start' post.pk %}" class="vm-claim-btn">
             <i class="bi bi-basket-fill"></i> Buy
           </a>
           <button type="button" class="vm-donate-btn btn-donate-open"
-                  data-post-id="{{ post.pk }}"
-                  data-veggie="{{ post.vegetable }}"
-                  title="Move to Donate">
+                  data-post-id="{{ post.pk }}" data-veggie="{{ post.vegetable }}" title="Move to Donate">
             <i class="bi bi-heart-fill"></i>
           </button>
+          {% endif %}
           <button type="button" class="vm-edit-btn btn-edit-open"
                   data-post-id="{{ post.pk }}"
                   data-vegetable="{{ post.vegetable }}"
@@ -93,12 +150,12 @@
             <i class="bi bi-pencil-fill"></i>
           </button>
           <button type="button" class="vm-delete-btn btn-delete-open"
-                  data-post-id="{{ post.pk }}"
-                  data-veggie="{{ post.vegetable }}"
-                  title="Delete Post">
+                  data-post-id="{{ post.pk }}" data-veggie="{{ post.vegetable }}" title="Delete Post">
             <i class="bi bi-trash-fill"></i>
           </button>
         </div>
+        {% endif %}
+
       </div>
 
     </div>

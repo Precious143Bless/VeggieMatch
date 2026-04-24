@@ -141,7 +141,8 @@ def category(request):
 
 def posted_veggies(request):
     _sync_all_posts()
-    posts = VegetablePost.objects.filter(status=VegetablePost.STATUS_ACTIVE).order_by('-created_at')
+    # Show all posts so farmers can see completed transactions with buyer/claimer info
+    posts = VegetablePost.objects.order_by('-created_at').prefetch_related('buys', 'rescues')
     return render(request, 'core/posted_veggies.html', {'posts': posts})
 
 
