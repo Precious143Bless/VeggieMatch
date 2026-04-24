@@ -63,7 +63,7 @@ class Migration(migrations.Migration):
                 ('id',           models.BigAutoField(primary_key=True, serialize=False)),
                 ('phone_number', models.CharField(max_length=20)),
                 ('otp_code',     models.CharField(max_length=6)),
-                ('purpose',      models.CharField(choices=[('POST','Post'),('BUY','Buy'),('RESCUE','Rescue'),('DONATE','Donate'),('EDIT','Edit'),('DELETE','Delete')], max_length=10)),
+                ('purpose',      models.CharField(choices=[('POST','Post'),('BUY','Buy'),('RESCUE','Rescue'),('DONATE','Donate'),('EDIT','Edit'),('DELETE','Delete'),('DASHBOARD','Dashboard')], max_length=10)),
                 ('post_id',      models.BigIntegerField(blank=True, null=True)),
                 ('created_at',   models.DateTimeField(auto_now_add=True)),
                 ('expires_at',   models.DateTimeField()),

@@ -1,45 +1,55 @@
-/**
- * VeggieMatch – Countdown Timer
- * Updates all .vm-timer elements with live countdowns.
- * Marks timers as "urgent" (red) when under 30 minutes.
- */
+// timer.js — countdown timers + auto-remove expired cards
+
 (function () {
-  'use strict';
-
-  function formatCountdown(ms) {
-    if (ms <= 0) return 'Expired';
-
-    const totalSec = Math.floor(ms / 1000);
-    const hours    = Math.floor(totalSec / 3600);
-    const minutes  = Math.floor((totalSec % 3600) / 60);
-    const seconds  = totalSec % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${String(minutes).padStart(2, '0')}m`;
-    }
-    return `${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+  function formatTime(seconds) {
+    if (seconds <= 0) return 'Expired';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
   }
 
-  function updateTimers() {
-    const timers = document.querySelectorAll('.vm-timer[data-expiry]');
-    const now    = Date.now();
+  function tick() {
+    const now = Date.now();
+    document.querySelectorAll('.vm-timer[data-expiry]').forEach(el => {
+      const expiry  = new Date(el.dataset.expiry).getTime();
+      const seconds = Math.max(0, Math.floor((expiry - now) / 1000));
+      el.textContent = formatTime(seconds);
 
-    timers.forEach(function (el) {
-      const expiry = new Date(el.dataset.expiry).getTime();
-      const diff   = expiry - now;
+      // Colour urgency
+      if (seconds <= 0) {
+        el.style.color = '#c62828';
+      } else if (seconds < 300) {       // < 5 mins
+        el.style.color = '#e65100';
+        el.style.fontWeight = '700';
+      } else if (seconds < 1800) {      // < 30 mins
+        el.style.color = '#f57c00';
+      }
 
-      el.textContent = formatCountdown(diff);
-
-      // Under 30 minutes → urgent styling
-      if (diff <= 30 * 60 * 1000) {
-        el.classList.add('urgent');
-      } else {
-        el.classList.remove('urgent');
+      // Auto-remove the card when expired (home page active listings only)
+      if (seconds <= 0) {
+        const card = el.closest('.vm-post-card');
+        if (card) {
+          // Fade out then remove
+          card.style.transition = 'opacity 1.2s';
+          card.style.opacity    = '0';
+          setTimeout(() => {
+            card.remove();
+            // Update the count pill if present
+            const pill = document.getElementById('countPill');
+            if (pill) {
+              const remaining = document.querySelectorAll('.vm-post-card:not([style*="opacity: 0"])').length;
+              pill.textContent = remaining;
+            }
+          }, 1200);
+        }
       }
     });
   }
 
   // Run immediately then every second
-  updateTimers();
-  setInterval(updateTimers, 1000);
+  tick();
+  setInterval(tick, 1000);
 })();

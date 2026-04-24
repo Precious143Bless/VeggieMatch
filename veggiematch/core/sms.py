@@ -42,12 +42,13 @@ def _send_semaphore(phone_number, message):
 
 def send_otp(phone_number, otp_code, purpose):
     message_map = {
-        'POST':   f"[VeggieMatch] Your OTP to post vegetables: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'BUY':    f"[VeggieMatch] Your OTP to buy this item: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'RESCUE': f"[VeggieMatch] Your OTP to claim this rescue item: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'DONATE': f"[VeggieMatch] Your OTP to move your post to Donate: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'EDIT':   f"[VeggieMatch] Your OTP to edit your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
-        'DELETE': f"[VeggieMatch] Your OTP to delete your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'POST':      f"[VeggieMatch] Your OTP to post vegetables: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'BUY':       f"[VeggieMatch] Your OTP to buy this item: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'RESCUE':    f"[VeggieMatch] Your OTP to claim this rescue item: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'DONATE':    f"[VeggieMatch] Your OTP to move your post to Donate: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'EDIT':      f"[VeggieMatch] Your OTP to edit your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'DELETE':    f"[VeggieMatch] Your OTP to delete your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'DASHBOARD': f"[VeggieMatch] Your OTP to view your posts: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
     }
     return _send_semaphore(phone_number, message_map.get(purpose, f"[VeggieMatch] Your OTP: {otp_code}"))
 
