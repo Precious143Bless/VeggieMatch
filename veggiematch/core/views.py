@@ -260,7 +260,7 @@ def rescue_start(request, post_id):
                 return JsonResponse({'ok': False, 'errors': {'phone_number': 'You cannot claim your own post.'}})
             qty = d['quantity_kg']
             if qty > post.quantity:
-                return JsonResponse({'ok': False, 'errors': {'quantity_kg': f'Cannot exceed available quantity ({post.quantity} kg).'}})
+                return JsonResponse({'ok': False, 'errors': {'quantity_kg': f'Cannot exceed remaining quantity ({post.quantity} kg).'}})
             request.session['pending_rescue'] = {
                 'post_id':        post.pk,
                 'claimer_name':   d['claimer_name'],
@@ -288,38 +288,71 @@ def rescue_verify(request):
         form = OTPForm(request.POST)
         if form.is_valid():
             if verify_otp(pending['phone_number'], form.cleaned_data['otp_code'], 'RESCUE'):
-                post           = get_object_or_404(VegetablePost, pk=pending['post_id'])
-                claimer_photo  = _save_base64_image(pending['claimer_photo'], 'faces/claimers') if pending.get('claimer_photo') else ''
-                post.status    = VegetablePost.STATUS_BOUGHT
-                post.save(update_fields=['status'])
-                RescueRecord.objects.create(
-                    post           = post,
-                    claimer_name   = pending['claimer_name'],
-                    claimer_number = pending['phone_number'],
-                    claimer_photo  = claimer_photo,
-                    quantity_kg    = pending.get('quantity_kg', post.quantity),
-                )
+                from django.db import transaction
+                from decimal import Decimal
+
+                qty_claimed = Decimal(pending.get('quantity_kg', '0'))
+
+                with transaction.atomic():
+                    # Re-fetch with lock to prevent race conditions
+                    post = get_object_or_404(
+                        VegetablePost.objects.select_for_update(),
+                        pk=pending['post_id'],
+                        status=VegetablePost.STATUS_RESCUE,
+                    )
+
+                    # Guard: someone else may have claimed the remaining stock
+                    if qty_claimed > post.quantity:
+                        return JsonResponse({
+                            'ok': False,
+                            'errors': {'__all__': f'Only {post.quantity} kg remaining. Please go back and update your quantity.'},
+                        })
+
+                    claimer_photo = _save_base64_image(pending['claimer_photo'], 'faces/claimers') if pending.get('claimer_photo') else ''
+
+                    # Deduct quantity
+                    post.quantity -= qty_claimed
+                    # Close the post only when fully claimed
+                    if post.quantity <= 0:
+                        post.quantity = 0
+                        post.status   = VegetablePost.STATUS_BOUGHT
+                    post.save(update_fields=['quantity', 'status'])
+
+                    RescueRecord.objects.create(
+                        post           = post,
+                        claimer_name   = pending['claimer_name'],
+                        claimer_number = pending['phone_number'],
+                        claimer_photo  = claimer_photo,
+                        quantity_kg    = qty_claimed,
+                    )
+
+                remaining = float(post.quantity)
                 send_rescue_notification(
                     farmer_phone   = post.phone_number,
                     claimer_name   = pending['claimer_name'],
                     claimer_phone  = pending['phone_number'],
                     vegetable      = post.vegetable,
-                    quantity       = pending.get('quantity_kg', post.quantity),
+                    quantity       = qty_claimed,
                     location       = post.get_full_location(),
                 )
                 send_rescue_confirmation(
                     claimer_phone  = pending['phone_number'],
                     claimer_name   = pending['claimer_name'],
                     vegetable      = post.vegetable,
-                    quantity       = pending.get('quantity_kg', post.quantity),
+                    quantity       = qty_claimed,
                     farmer_name    = post.farmer_name,
                     farmer_phone   = post.phone_number,
                     location       = post.get_full_location(),
                 )
                 del request.session['pending_rescue']
+
+                msg = 'Claim confirmed! Thank you for helping reduce food waste.'
+                if remaining > 0:
+                    msg += f' ({remaining:g} kg still available for others.)'
+
                 return JsonResponse({
                     'ok': True,
-                    'message': 'Claim confirmed! Thank you for helping reduce food waste.',
+                    'message': msg,
                     'farmer_name':  post.farmer_name,
                     'farmer_phone': post.phone_number,
                 })

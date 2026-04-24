@@ -68,8 +68,9 @@ class BuyRecord(models.Model):
 
 
 class RescueRecord(models.Model):
-    """Community kitchen/person claims a rescued (donated) post for free."""
-    post           = models.OneToOneField(VegetablePost, on_delete=models.CASCADE, related_name='rescue')
+    """Community kitchen/person claims a portion of a donated post for free.
+    Multiple claimers can take partial quantities until the post is fully claimed."""
+    post           = models.ForeignKey(VegetablePost, on_delete=models.CASCADE, related_name='rescues')
     claimer_name   = models.CharField(max_length=100)
     claimer_number = models.CharField(max_length=20)
     claimer_photo  = models.ImageField(upload_to='faces/claimers/', blank=True, null=True)

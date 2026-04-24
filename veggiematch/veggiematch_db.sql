@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS `core_buyrecord` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── core_rescuerecord ─────────────────────────────────────────
+-- Multiple claimers can take partial quantities from one donated post
 CREATE TABLE IF NOT EXISTS `core_rescuerecord` (
   `id`              bigint        NOT NULL AUTO_INCREMENT,
   `post_id`         bigint        NOT NULL,
@@ -74,7 +75,7 @@ CREATE TABLE IF NOT EXISTS `core_rescuerecord` (
   `quantity_kg`     decimal(8,2)  NOT NULL DEFAULT '0.00',
   `claimed_at`      datetime(6)   NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_rescue_post` (`post_id`),
+  KEY `idx_rescue_post` (`post_id`),
   CONSTRAINT `fk_rescue_post` FOREIGN KEY (`post_id`) REFERENCES `core_vegetablepost` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
