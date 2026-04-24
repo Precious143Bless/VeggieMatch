@@ -28,16 +28,16 @@ def _notify_expiring_posts():
     """Send a one-time SMS warning to farmers whose active posts expire within 30 minutes."""
     import threading
     warning_window = timezone.now() + timedelta(minutes=30)
-    posts = VegetablePost.objects.filter(
+    # Fetch into a list first — single DB hit, avoids re-evaluating the queryset after the bulk update
+    posts = list(VegetablePost.objects.filter(
         status=VegetablePost.STATUS_ACTIVE,
         expiry_time__lte=warning_window,
         expiry_time__gt=timezone.now(),
         expiry_notified=False,
-    )
-    if not posts.exists():
+    ))
+    if not posts:
         return
-    # Mark first to avoid duplicate sends if two requests race
-    ids = list(posts.values_list('pk', flat=True))
+    ids = [p.pk for p in posts]
     VegetablePost.objects.filter(pk__in=ids).update(expiry_notified=True)
     for post in posts:
         mins_left = max(1, int((post.expiry_time - timezone.now()).total_seconds() // 60))
