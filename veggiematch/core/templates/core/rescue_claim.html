@@ -96,7 +96,7 @@
               <i class="bi bi-arrow-counterclockwise"></i> Retake
             </button>
           </div>
-          <div class="vm-err d-none mt-1" id="err-rescuer_photo"></div>
+          <div class="vm-err d-none mt-1" id="err-claimer_photo"></div>
         </div>
       </div>
 
@@ -183,7 +183,7 @@ const MAX_QTY = {{ post.quantity }};
   const canvas     = document.getElementById('rescuerCanvas');
   const captureBtn = document.getElementById('rescuerCaptureBtn');
   const preview    = document.getElementById('rescuerPreview');
-  const hidden     = document.getElementById('id_rescuer_photo');
+  const hidden     = document.getElementById('id_claimer_photo');
   const retakeBtn  = document.getElementById('rescuerRetakeBtn');
   let stream = null;
 
@@ -221,7 +221,7 @@ const MAX_QTY = {{ post.quantity }};
     captureBtn.style.display = 'none';
     retakeBtn.style.display  = 'inline-flex';
     if (stream) stream.getTracks().forEach(t => t.stop());
-    const errEl = document.getElementById('err-rescuer_photo');
+    const errEl = document.getElementById('err-claimer_photo');
     if (errEl) { errEl.textContent = ''; errEl.classList.add('d-none'); }
   });
 
@@ -245,8 +245,8 @@ function setStep(n) {
 document.getElementById('rescueForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn   = document.getElementById('rescueSubmitBtn');
-  const photo = document.getElementById('id_rescuer_photo').value;
-  const errPhoto = document.getElementById('err-rescuer_photo');
+  const photo = document.getElementById('id_claimer_photo').value;
+  const errPhoto = document.getElementById('err-claimer_photo');
 
   if (!photo || !photo.startsWith('data:image')) {
     errPhoto.textContent = 'Please capture your face photo.';
