@@ -115,29 +115,30 @@ def post_vegetable(request):
         form = PostVegetableForm(request.POST)
         if form.is_valid():
             d = form.cleaned_data
-            # JS-side photo validation — check here too
             if not d.get('farmer_photo', '').startswith('data:image'):
                 return JsonResponse({'ok': False, 'errors': {'farmer_photo': 'Please capture your face photo.'}})
             if not d.get('veggie_photo', '').startswith('data:image'):
                 return JsonResponse({'ok': False, 'errors': {'veggie_photo': 'Please capture a photo of your vegetables.'}})
+            # Save photos to disk now — keep only the path in session, not the raw base64
+            farmer_photo_path = _save_base64_image(d['farmer_photo'], 'faces/farmers')
+            veggie_photo_path = _save_base64_image(d['veggie_photo'], 'veggies')
             request.session['pending_post'] = {
-                'farmer_name':   d['farmer_name'],
-                'phone_number':  d['phone_number'],
-                'farmer_photo':  d['farmer_photo'],
-                'vegetable':     d['vegetable'],
-                'veggie_photo':  d['veggie_photo'],
-                'surplus_level': d['surplus_level'],
-                'quantity':      str(d['quantity']),
-                'price_per_kg':  str(d['price_per_kg']),
-                'pickup_note':   d.get('pickup_note', ''),
-                'timer_minutes': form.get_timer_minutes(),
+                'farmer_name':        d['farmer_name'],
+                'phone_number':       d['phone_number'],
+                'farmer_photo_path':  farmer_photo_path,
+                'vegetable':          d['vegetable'],
+                'veggie_photo_path':  veggie_photo_path,
+                'surplus_level':      d['surplus_level'],
+                'quantity':           str(d['quantity']),
+                'price_per_kg':       str(d['price_per_kg']),
+                'pickup_note':        d.get('pickup_note', ''),
+                'timer_minutes':      form.get_timer_minutes(),
             }
             create_otp(d['phone_number'], 'POST')
             return JsonResponse({'ok': True, 'phone': d['phone_number']})
         else:
             errors = {f: e.as_text() for f, e in form.errors.items()}
             return JsonResponse({'ok': False, 'errors': errors})
-    # GET — render the modal page (fallback)
     form = PostVegetableForm()
     return render(request, 'core/post.html', {'form': form})
 
@@ -152,14 +153,12 @@ def post_verify(request):
         if form.is_valid():
             if verify_otp(pending['phone_number'], form.cleaned_data['otp_code'], 'POST'):
                 minutes      = int(pending['timer_minutes'])
-                farmer_photo = _save_base64_image(pending['farmer_photo'], 'faces/farmers') if pending.get('farmer_photo') else ''
-                veggie_photo = _save_base64_image(pending['veggie_photo'],  'veggies')       if pending.get('veggie_photo')  else ''
                 post = VegetablePost.objects.create(
                     farmer_name    = pending['farmer_name'],
                     phone_number   = pending['phone_number'],
-                    farmer_photo   = farmer_photo,
+                    farmer_photo   = pending.get('farmer_photo_path', ''),
                     vegetable      = pending['vegetable'],
-                    veggie_photo   = veggie_photo,
+                    veggie_photo   = pending.get('veggie_photo_path', ''),
                     surplus_level  = pending.get('surplus_level', 'LOW'),
                     quantity       = pending['quantity'],
                     price_per_kg   = pending['price_per_kg'],
@@ -195,11 +194,11 @@ def buy_start(request, post_id):
             if qty > post.quantity:
                 return JsonResponse({'ok': False, 'errors': {'quantity_kg': f'Cannot exceed available quantity ({post.quantity} kg).'}})
             request.session['pending_buy'] = {
-                'post_id':      post.pk,
-                'buyer_name':   d['buyer_name'],
-                'phone_number': d['phone_number'],
-                'buyer_photo':  d.get('buyer_photo', ''),
-                'quantity_kg':  str(qty),
+                'post_id':           post.pk,
+                'buyer_name':        d['buyer_name'],
+                'phone_number':      d['phone_number'],
+                'buyer_photo_path':  _save_base64_image(d['buyer_photo'], 'faces/buyers') if d.get('buyer_photo', '').startswith('data:image') else '',
+                'quantity_kg':       str(qty),
             }
             create_otp(d['phone_number'], 'BUY', post_id=post.pk)
             return JsonResponse({'ok': True, 'phone': d['phone_number']})
@@ -221,7 +220,7 @@ def buy_verify(request):
         if form.is_valid():
             if verify_otp(pending['phone_number'], form.cleaned_data['otp_code'], 'BUY'):
                 post        = get_object_or_404(VegetablePost, pk=pending['post_id'])
-                buyer_photo = _save_base64_image(pending['buyer_photo'], 'faces/buyers') if pending.get('buyer_photo') else ''
+                buyer_photo = pending.get('buyer_photo_path', '')
                 post.status = VegetablePost.STATUS_BOUGHT
                 post.save(update_fields=['status'])
                 BuyRecord.objects.create(
@@ -288,11 +287,11 @@ def rescue_start(request, post_id):
             if qty > post.quantity:
                 return JsonResponse({'ok': False, 'errors': {'quantity_kg': f'Cannot exceed remaining quantity ({post.quantity} kg).'}})
             request.session['pending_rescue'] = {
-                'post_id':        post.pk,
-                'claimer_name':   d['claimer_name'],
-                'phone_number':   d['phone_number'],
-                'claimer_photo':  d.get('claimer_photo', ''),
-                'quantity_kg':    str(qty),
+                'post_id':             post.pk,
+                'claimer_name':        d['claimer_name'],
+                'phone_number':        d['phone_number'],
+                'claimer_photo_path':  _save_base64_image(d['claimer_photo'], 'faces/claimers') if d.get('claimer_photo', '').startswith('data:image') else '',
+                'quantity_kg':         str(qty),
             }
             create_otp(d['phone_number'], 'RESCUE', post_id=post.pk)
             return JsonResponse({'ok': True, 'phone': d['phone_number']})
@@ -334,7 +333,7 @@ def rescue_verify(request):
                             'errors': {'__all__': f'Only {post.quantity} kg remaining. Please go back and update your quantity.'},
                         })
 
-                    claimer_photo = _save_base64_image(pending['claimer_photo'], 'faces/claimers') if pending.get('claimer_photo') else ''
+                    claimer_photo = pending.get('claimer_photo_path', '')
 
                     # Deduct quantity
                     post.quantity -= qty_claimed
