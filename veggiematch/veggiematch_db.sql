@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `core_vegetablepost` (
   `price_per_kg`    decimal(8,2)  NOT NULL DEFAULT '1.00',
   `pickup_address`  varchar(255)  NOT NULL DEFAULT 'La Trinidad Trading Post, Benguet',
   `pickup_note`     varchar(255)  NOT NULL DEFAULT '',
+  -- status: ACTIVE | BOUGHT (paid) | CLAIMED (donated, fully taken) | RESCUE (available to donate)
   `status`          varchar(10)   NOT NULL DEFAULT 'ACTIVE',
   `created_at`      datetime(6)   NOT NULL,
   `expiry_time`     datetime(6)   NOT NULL,

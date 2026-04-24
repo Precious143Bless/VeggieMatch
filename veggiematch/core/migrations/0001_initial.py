@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('price_per_kg',   models.DecimalField(decimal_places=2, default=1.0, max_digits=8)),
                 ('pickup_address', models.CharField(default='La Trinidad Trading Post, Benguet', max_length=255)),
                 ('pickup_note',    models.CharField(blank=True, max_length=255)),
-                ('status',         models.CharField(choices=[('ACTIVE','Active'),('BOUGHT','Bought'),('RESCUE','Available for Donate')], default='ACTIVE', max_length=10)),
+                ('status',         models.CharField(choices=[('ACTIVE','Active'),('BOUGHT','Bought'),('CLAIMED','Fully Claimed (Donated)'),('RESCUE','Available for Donate')], default='ACTIVE', max_length=10)),
                 ('created_at',     models.DateTimeField(auto_now_add=True)),
                 ('expiry_time',    models.DateTimeField()),
                 ('expiry_notified', models.BooleanField(default=False)),

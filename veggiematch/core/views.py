@@ -340,7 +340,7 @@ def rescue_verify(request):
                     # Close the post only when fully claimed
                     if post.quantity <= 0:
                         post.quantity = 0
-                        post.status   = VegetablePost.STATUS_BOUGHT
+                        post.status   = VegetablePost.STATUS_CLAIMED
                     post.save(update_fields=['quantity', 'status'])
 
                     RescueRecord.objects.create(
@@ -418,8 +418,8 @@ def donate_verify(request, post_id):
 def post_edit_request(request, post_id):
     """AJAX: send OTP to farmer to verify ownership before editing."""
     post = get_object_or_404(VegetablePost, pk=post_id)
-    if post.status == VegetablePost.STATUS_BOUGHT:
-        return JsonResponse({'ok': False, 'error': 'Cannot edit a post that has already been bought.'})
+    if post.status in (VegetablePost.STATUS_BOUGHT, VegetablePost.STATUS_CLAIMED):
+        return JsonResponse({'ok': False, 'error': 'Cannot edit a post that has already been completed.'})
     if request.method == 'POST':
         create_otp(post.phone_number, 'EDIT', post_id=post.pk)
         return JsonResponse({'ok': True, 'phone': post.phone_number})
@@ -477,8 +477,8 @@ def post_edit_verify(request, post_id):
 def post_delete_request(request, post_id):
     """AJAX: send OTP to farmer to verify ownership before deleting."""
     post = get_object_or_404(VegetablePost, pk=post_id)
-    if post.status == VegetablePost.STATUS_BOUGHT:
-        return JsonResponse({'ok': False, 'error': 'Cannot delete a post that has already been bought.'})
+    if post.status in (VegetablePost.STATUS_BOUGHT, VegetablePost.STATUS_CLAIMED):
+        return JsonResponse({'ok': False, 'error': 'Cannot delete a post that has already been completed.'})
     if request.method == 'POST':
         create_otp(post.phone_number, 'DELETE', post_id=post.pk)
         return JsonResponse({'ok': True, 'phone': post.phone_number})

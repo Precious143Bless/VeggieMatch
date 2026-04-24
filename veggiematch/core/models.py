@@ -3,13 +3,15 @@ from django.utils import timezone
 
 
 class VegetablePost(models.Model):
-    STATUS_ACTIVE  = 'ACTIVE'
-    STATUS_BOUGHT  = 'BOUGHT'    # was CLAIMED
-    STATUS_RESCUE  = 'RESCUE'
-    STATUS_CHOICES = [
-        (STATUS_ACTIVE, 'Active'),
-        (STATUS_BOUGHT, 'Bought'),
-        (STATUS_RESCUE, 'Available for Donate'),
+    STATUS_ACTIVE   = 'ACTIVE'
+    STATUS_BOUGHT   = 'BOUGHT'   # paid purchase completed
+    STATUS_CLAIMED  = 'CLAIMED'  # donated post fully claimed by community
+    STATUS_RESCUE   = 'RESCUE'
+    STATUS_CHOICES  = [
+        (STATUS_ACTIVE,  'Active'),
+        (STATUS_BOUGHT,  'Bought'),
+        (STATUS_CLAIMED, 'Fully Claimed (Donated)'),
+        (STATUS_RESCUE,  'Available for Donate'),
     ]
 
     SURPLUS_LOW    = 'LOW'
