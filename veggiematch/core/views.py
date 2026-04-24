@@ -11,7 +11,7 @@ from datetime import timedelta
 
 from .models import VegetablePost, BuyRecord, RescueRecord
 from .forms  import PostVegetableForm, OTPForm, BuyForm, RescueForm
-from .sms    import create_otp, verify_otp, send_buy_notification, send_rescue_notification
+from .sms    import create_otp, verify_otp, send_buy_notification, send_buy_confirmation, send_rescue_notification, send_rescue_confirmation
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -211,9 +211,26 @@ def buy_verify(request):
                     buyer_phone  = pending['phone_number'],
                     vegetable    = post.vegetable,
                     quantity     = pending.get('quantity_kg', post.quantity),
+                    price_per_kg = post.price_per_kg,
+                    location     = post.get_full_location(),
+                )
+                send_buy_confirmation(
+                    buyer_phone  = pending['phone_number'],
+                    buyer_name   = pending['buyer_name'],
+                    vegetable    = post.vegetable,
+                    quantity     = pending.get('quantity_kg', post.quantity),
+                    price_per_kg = post.price_per_kg,
+                    farmer_name  = post.farmer_name,
+                    farmer_phone = post.phone_number,
+                    location     = post.get_full_location(),
                 )
                 del request.session['pending_buy']
-                return JsonResponse({'ok': True, 'message': f"Purchase confirmed! Pick up at: {post.get_full_location()}"})
+                return JsonResponse({
+                    'ok': True,
+                    'message': f"Purchase confirmed! Pick up at: {post.get_full_location()}",
+                    'farmer_name':  post.farmer_name,
+                    'farmer_phone': post.phone_number,
+                })
             else:
                 return JsonResponse({'ok': False, 'errors': {'otp_code': '* Invalid or expired OTP.'}})
         else:
@@ -288,9 +305,24 @@ def rescue_verify(request):
                     claimer_phone  = pending['phone_number'],
                     vegetable      = post.vegetable,
                     quantity       = pending.get('quantity_kg', post.quantity),
+                    location       = post.get_full_location(),
+                )
+                send_rescue_confirmation(
+                    claimer_phone  = pending['phone_number'],
+                    claimer_name   = pending['claimer_name'],
+                    vegetable      = post.vegetable,
+                    quantity       = pending.get('quantity_kg', post.quantity),
+                    farmer_name    = post.farmer_name,
+                    farmer_phone   = post.phone_number,
+                    location       = post.get_full_location(),
                 )
                 del request.session['pending_rescue']
-                return JsonResponse({'ok': True, 'message': 'Claim confirmed! Thank you for helping reduce food waste.'})
+                return JsonResponse({
+                    'ok': True,
+                    'message': 'Claim confirmed! Thank you for helping reduce food waste.',
+                    'farmer_name':  post.farmer_name,
+                    'farmer_phone': post.phone_number,
+                })
             else:
                 return JsonResponse({'ok': False, 'errors': {'otp_code': '* Invalid or expired OTP.'}})
         else:

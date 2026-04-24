@@ -45,6 +45,10 @@
           <i class="bi bi-clock-fill" style="color:var(--orange);"></i>
           <span class="vm-timer" data-expiry="{{ post.expiry_time|date:'c' }}">soon</span>
         </div>
+        <div class="vm-rescue-summary-farmer mt-1">
+          <i class="bi bi-telephone-fill" style="color:var(--green);"></i>
+          <a href="tel:{{ post.phone_number }}" style="color:var(--green);font-weight:600;">{{ post.phone_number }}</a>
+        </div>
       </div>
     </div>
 
@@ -133,6 +137,11 @@
       <div class="vm-success-icon">✅</div>
       <h3>Purchase Confirmed!</h3>
       <p id="buySuccessMsg" class="text-muted"></p>
+      <div class="vm-farmer-contact-card" id="farmerContactCard" style="display:none;background:var(--green-pale);border:1px solid #a3d9b1;border-radius:12px;padding:1rem;margin:1rem 0;text-align:left;">
+        <div style="font-weight:700;margin-bottom:0.4rem;"><i class="bi bi-person-fill me-1" style="color:var(--green);"></i>Farmer Contact</div>
+        <div id="farmerContactName" style="font-size:0.95rem;"></div>
+        <div id="farmerContactPhone" style="font-size:0.95rem;margin-top:0.25rem;"></div>
+      </div>
       <a href="{% url 'home' %}" class="vm-btn-green mt-3">
         <i class="bi bi-house-fill me-2"></i>Back to Home
       </a>
@@ -268,6 +277,12 @@ document.getElementById('buyOtpForm').addEventListener('submit', async (e) => {
 
   if (data.ok) {
     document.getElementById('buySuccessMsg').textContent = data.message;
+    if (data.farmer_name && data.farmer_phone) {
+      const card = document.getElementById('farmerContactCard');
+      document.getElementById('farmerContactName').innerHTML = `<i class="bi bi-person-fill me-1"></i>${data.farmer_name}`;
+      document.getElementById('farmerContactPhone').innerHTML = `<i class="bi bi-telephone-fill me-1"></i><a href="tel:${data.farmer_phone}" style="color:var(--green);font-weight:600;">${data.farmer_phone}</a>`;
+      card.style.display = '';
+    }
     setStep(3);
   } else {
     const errEl = document.getElementById('err-buy-otp');

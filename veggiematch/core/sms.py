@@ -52,28 +52,56 @@ def send_otp(phone_number, otp_code, purpose):
     return _send_semaphore(phone_number, message_map.get(purpose, f"[VeggieMatch] Your OTP: {otp_code}"))
 
 
-def send_buy_notification(farmer_phone, buyer_name, buyer_phone, vegetable, quantity):
+def send_buy_notification(farmer_phone, buyer_name, buyer_phone, vegetable, quantity, price_per_kg, location):
     """Notify farmer when their post is bought."""
     message = (
         f"[VeggieMatch] Your post was bought!\n"
-        f"Vegetable: {vegetable} ({quantity} kg)\n"
+        f"Item: {vegetable} ({quantity} kg)\n"
         f"Buyer: {buyer_name}\n"
         f"Contact: {buyer_phone}\n"
+        f"Pickup: {location}\n"
         f"Please prepare for pickup."
     )
     return _send_semaphore(farmer_phone, message)
 
 
-def send_rescue_notification(farmer_phone, claimer_name, claimer_phone, vegetable, quantity):
+def send_buy_confirmation(buyer_phone, buyer_name, vegetable, quantity, price_per_kg, farmer_name, farmer_phone, location):
+    """Send buyer their order summary + farmer contact."""
+    message = (
+        f"[VeggieMatch] Purchase confirmed!\n"
+        f"Item: {vegetable} ({quantity} kg)\n"
+        f"Total: ~\u20b1{float(price_per_kg) * float(quantity):.0f}\n"
+        f"Pickup: {location}\n"
+        f"Farmer: {farmer_name}\n"
+        f"Farmer No.: {farmer_phone}"
+    )
+    return _send_semaphore(buyer_phone, message)
+
+
+def send_rescue_notification(farmer_phone, claimer_name, claimer_phone, vegetable, quantity, location):
     """Notify farmer when their donated post is claimed."""
     message = (
         f"[VeggieMatch] Your donated post was claimed!\n"
-        f"Vegetable: {vegetable} ({quantity} kg)\n"
+        f"Item: {vegetable} ({quantity} kg)\n"
         f"Claimer: {claimer_name}\n"
         f"Contact: {claimer_phone}\n"
+        f"Pickup: {location}\n"
         f"Thank you for donating!"
     )
     return _send_semaphore(farmer_phone, message)
+
+
+def send_rescue_confirmation(claimer_phone, claimer_name, vegetable, quantity, farmer_name, farmer_phone, location):
+    """Send claimer their claim summary + farmer contact."""
+    message = (
+        f"[VeggieMatch] Claim confirmed!\n"
+        f"Item: {vegetable} ({quantity} kg) - FREE\n"
+        f"Pickup: {location}\n"
+        f"Farmer: {farmer_name}\n"
+        f"Farmer No.: {farmer_phone}\n"
+        f"Thank you for helping reduce food waste!"
+    )
+    return _send_semaphore(claimer_phone, message)
 
 
 def create_otp(phone_number, purpose, post_id=None):
