@@ -15,19 +15,20 @@
     body {
       background: #f0f4f0;
     }
-    .vm-main, .vm-bottom-nav {
+    .vm-main {
       max-width: 480px;
       margin-left: auto;
       margin-right: auto;
-    }
-    .vm-main {
       background: #fff;
       min-height: 100vh;
       box-shadow: 0 0 40px rgba(0,0,0,0.10);
     }
     .vm-bottom-nav {
-      left: 50%;
-      transform: translateX(-50%);
+      max-width: 480px;
+      left: 0;
+      right: 0;
+      margin-left: auto;
+      margin-right: auto;
     }
   </style>
 </head>
@@ -68,11 +69,6 @@
      class="vm-bnav-item {% if 'rescue' in request.resolver_match.url_name %}active{% endif %}">
     <i class="bi bi-heart-fill"></i>
     <span>Donate</span>
-  </a>
-  <a href="{% url 'dashboard_request' %}"
-     class="vm-bnav-item {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
-    <i class="bi bi-person-lines-fill"></i>
-    <span>My Posts</span>
   </a>
 </nav>
 

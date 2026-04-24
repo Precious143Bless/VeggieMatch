@@ -511,44 +511,7 @@ def donate_verify(request, post_id):
     return JsonResponse({'ok': False})
 
 
-# ── Farmer Dashboard (OTP-gated, no login) ───────────────────────────────────
-
-def dashboard_request(request):
-    """GET: show phone entry form. POST: send OTP."""
-    if request.method == 'POST':
-        phone = request.POST.get('phone_number', '').strip()
-        if not phone:
-            return render(request, 'core/dashboard.html', {'error': 'Please enter your phone number.'})
-        result = create_otp(phone, 'DASHBOARD')
-        if not result['ok']:
-            return render(request, 'core/dashboard.html', {'error': result['error']})
-        request.session['dashboard_phone'] = phone
-        return render(request, 'core/dashboard.html', {'otp_sent': True, 'phone': phone})
-    return render(request, 'core/dashboard.html', {})
-
-
-def dashboard_verify(request):
-    """POST AJAX: verify OTP then store phone in session as verified."""
-    if request.method == 'POST':
-        phone    = request.session.get('dashboard_phone', '')
-        otp_code = request.POST.get('otp_code', '')
-        if not phone:
-            return JsonResponse({'ok': False, 'error': 'Session expired. Please try again.'})
-        if verify_otp(phone, otp_code, 'POST'):
-            request.session['dashboard_verified_phone'] = phone
-            return JsonResponse({'ok': True})
-        return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})
-    return JsonResponse({'ok': False})
-
-
-def dashboard_posts(request):
-    """Render the farmer's post list — only accessible after OTP verification."""
-    phone = request.session.get('dashboard_verified_phone', '')
-    if not phone:
-        return redirect('dashboard_request')
-    _sync_all_posts()
-    posts = VegetablePost.objects.filter(phone_number=phone).order_by('-created_at')
-    return render(request, 'core/dashboard_posts.html', {'posts': posts, 'phone': phone})
+# ── Edit Post ─────────────────────────────────────────────────────────────────
 
 def post_edit_request(request, post_id):
     """AJAX: send OTP to farmer to verify ownership before editing."""
