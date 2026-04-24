@@ -158,7 +158,10 @@
       </div>
 
       <p class="text-muted small mb-3">Screenshot this receipt to show the farmer at pickup.</p>
-      <a href="{% url 'home' %}" class="vm-btn-green w-100">
+      <button onclick="downloadReceipt('buyReceipt','buy-receipt')" class="vm-btn-green w-100 mb-2">
+        <i class="bi bi-download me-2"></i>Download Receipt
+      </button>
+      <a href="{% url 'home' %}" class="vm-btn-green w-100" style="background:transparent;border:1.5px solid var(--green);color:var(--green);">
         <i class="bi bi-house-fill me-2"></i>Back to Home
       </a>
     </div>
@@ -313,5 +316,49 @@ document.getElementById('buyOtpForm').addEventListener('submit', async (e) => {
 document.getElementById('buyOtpInput').addEventListener('input', function () {
   if (this.value.length === 6) document.getElementById('buyOtpForm').requestSubmit();
 });
+
+// ── Receipt download ──────────────────────────────────────────
+function downloadReceipt(cardId, filename) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  const scale = 2;
+  const W = 360, padX = 24, padY = 24, lineH = 26;
+  const lines = [];
+  card.querySelectorAll('div, span').forEach(el => {
+    const txt = el.innerText?.trim();
+    if (txt && el.children.length === 0) lines.push({ text: txt, el });
+  });
+  const H = padY * 2 + 48 + lines.length * lineH + 20;
+  const canvas = document.createElement('canvas');
+  canvas.width = W * scale; canvas.height = H * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+  const accent = '#2e7d32', bgColor = '#f0faf4', border = '#a3d9b1';
+  ctx.fillStyle = bgColor;
+  ctx.beginPath(); ctx.roundRect(0, 0, W, H, 12); ctx.fill();
+  ctx.fillStyle = accent;
+  ctx.beginPath(); ctx.roundRect(0, 0, W, 6, [12,12,0,0]); ctx.fill();
+  ctx.fillStyle = accent; ctx.font = 'bold 15px sans-serif';
+  ctx.fillText('VeggieMatch Receipt', padX, padY + 22);
+  ctx.strokeStyle = border; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(padX, padY + 32); ctx.lineTo(W - padX, padY + 32); ctx.stroke();
+  ctx.setLineDash([]);
+  let y = padY + 32 + lineH;
+  lines.forEach(({ text, el }) => {
+    const isLabel = el.style.fontSize === '0.72rem';
+    const isBig   = el.style.fontWeight === '700' && parseFloat(el.style.fontSize || '0') >= 1.0;
+    const isRef   = el.style.fontFamily?.includes('monospace');
+    ctx.fillStyle = isLabel ? '#999' : isBig ? '#111' : '#444';
+    ctx.font = isLabel ? '10px sans-serif' : isBig ? 'bold 16px sans-serif' : isRef ? '11px monospace' : '13px sans-serif';
+    ctx.fillText(text, padX, y);
+    y += lineH;
+  });
+  ctx.fillStyle = '#bbb'; ctx.font = '10px sans-serif';
+  ctx.fillText(`Generated ${new Date().toLocaleString()}`, padX, H - 10);
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = `${filename}-${Date.now()}.png`;
+  a.click();
+}
 </script>
 {% endblock %}
