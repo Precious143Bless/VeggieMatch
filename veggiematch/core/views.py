@@ -279,23 +279,43 @@ def buy_verify(request):
         form = OTPForm(request.POST)
         if form.is_valid():
             if verify_otp(pending['phone_number'], form.cleaned_data['otp_code'], 'BUY'):
-                post        = get_object_or_404(VegetablePost, pk=pending['post_id'])
-                buyer_photo = pending.get('buyer_photo_path', '')
-                post.status = VegetablePost.STATUS_BOUGHT
-                post.save(update_fields=['status'])
-                BuyRecord.objects.create(
-                    post         = post,
-                    buyer_name   = pending['buyer_name'],
-                    buyer_number = pending['phone_number'],
-                    buyer_photo  = buyer_photo,
-                    quantity_kg  = pending.get('quantity_kg', post.quantity),
-                )
+                from django.db import transaction
+                from decimal import Decimal
+
+                qty_bought = Decimal(pending.get('quantity_kg', '0'))
+
+                with transaction.atomic():
+                    post = get_object_or_404(
+                        VegetablePost.objects.select_for_update(),
+                        pk=pending['post_id'],
+                        status=VegetablePost.STATUS_ACTIVE,
+                    )
+                    if qty_bought > post.quantity:
+                        return JsonResponse({
+                            'ok': False,
+                            'errors': {'__all__': f'Only {post.quantity} kg remaining. Please go back and update your quantity.'},
+                        })
+
+                    buyer_photo   = pending.get('buyer_photo_path', '')
+                    post.quantity -= qty_bought
+                    if post.quantity <= 0:
+                        post.quantity = 0
+                        post.status   = VegetablePost.STATUS_BOUGHT
+                    post.save(update_fields=['quantity', 'status'])
+
+                    BuyRecord.objects.create(
+                        post         = post,
+                        buyer_name   = pending['buyer_name'],
+                        buyer_number = pending['phone_number'],
+                        buyer_photo  = buyer_photo,
+                        quantity_kg  = qty_bought,
+                    )
                 send_buy_notification(
                     farmer_phone = post.phone_number,
                     buyer_name   = pending['buyer_name'],
                     buyer_phone  = pending['phone_number'],
                     vegetable    = post.vegetable,
-                    quantity     = pending.get('quantity_kg', post.quantity),
+                    quantity     = qty_bought,
                     price_per_kg = post.price_per_kg,
                     location     = post.get_full_location(),
                 )
@@ -303,19 +323,22 @@ def buy_verify(request):
                     buyer_phone  = pending['phone_number'],
                     buyer_name   = pending['buyer_name'],
                     vegetable    = post.vegetable,
-                    quantity     = pending.get('quantity_kg', post.quantity),
+                    quantity     = qty_bought,
                     price_per_kg = post.price_per_kg,
                     farmer_name  = post.farmer_name,
                     farmer_phone = post.phone_number,
                     location     = post.get_full_location(),
                 )
                 del request.session['pending_buy']
+                msg = f"Purchase confirmed! Pick up at: {post.get_full_location()}"
+                if float(post.quantity) > 0:
+                    msg += f" ({float(post.quantity):g} kg still available.)"
                 return JsonResponse({
                     'ok': True,
-                    'message':      f"Purchase confirmed! Pick up at: {post.get_full_location()}",
+                    'message':      msg,
                     'ref':          f"BUY-{post.pk:05d}",
                     'vegetable':    post.vegetable,
-                    'quantity':     pending.get('quantity_kg', str(post.quantity)),
+                    'quantity':     str(qty_bought),
                     'price_per_kg': str(post.price_per_kg),
                     'location':     post.get_full_location(),
                     'farmer_name':  post.farmer_name,
