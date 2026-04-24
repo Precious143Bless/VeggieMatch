@@ -85,11 +85,15 @@ class OTPVerification(models.Model):
     PURPOSE_BUY    = 'BUY'
     PURPOSE_RESCUE = 'RESCUE'
     PURPOSE_DONATE = 'DONATE'
+    PURPOSE_EDIT   = 'EDIT'
+    PURPOSE_DELETE = 'DELETE'
     PURPOSE_CHOICES = [
         (PURPOSE_POST,   'Post'),
         (PURPOSE_BUY,    'Buy'),
         (PURPOSE_RESCUE, 'Rescue'),
         (PURPOSE_DONATE, 'Donate'),
+        (PURPOSE_EDIT,   'Edit'),
+        (PURPOSE_DELETE, 'Delete'),
     ]
 
     phone_number = models.CharField(max_length=20)

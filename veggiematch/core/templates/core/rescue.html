@@ -11,7 +11,7 @@
         <a href="{% url 'home' %}" class="vm-back-arrow"><i class="bi bi-arrow-left"></i></a>
         <div class="vm-rescue-appbar-icon">🍲</div>
         <div>
-          <div class="vm-appbar-title">Rescue Items</div>
+          <div class="vm-appbar-title">Donate Items</div>
           <div class="vm-appbar-sub">Free for community kitchens</div>
         </div>
       </div>
@@ -24,7 +24,7 @@
     <div class="vm-rescue-banner-inner">
       <div>
         <div class="vm-rescue-banner-tag">🌱 SDG 2 & 12</div>
-        <div class="vm-rescue-banner-title">Help Reduce Food Waste</div>
+        <div class="vm-rescue-banner-title">Help Donate Food Waste</div>
         <div class="vm-rescue-banner-sub">Unclaimed vegetables — take them free for feeding programs.</div>
       </div>
       <div class="vm-rescue-banner-emoji">🥦🥕🍅</div>
@@ -417,8 +417,10 @@ document.getElementById('rescueForm').addEventListener('submit', async (e) => {
 
   const fd = new FormData(e.target);
   // Map field names to what the view expects
-  fd.set('rescuer_name', document.getElementById('id_rescuer_name').value);
+  fd.set('claimer_name', document.getElementById('id_rescuer_name').value);
   fd.set('phone_number', phoneInput.value);
+  fd.set('claimer_photo', photo);
+  fd.set('quantity_kg', '1');
 
   const res  = await fetch(RESCUE_URL_BASE + postId + '/', {
     method: 'POST',

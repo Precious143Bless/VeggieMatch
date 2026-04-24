@@ -78,6 +78,7 @@ def send_rescue_notification(farmer_phone, claimer_name, claimer_phone, vegetabl
 
 def create_otp(phone_number, purpose, post_id=None):
     from core.models import OTPVerification
+    import threading
 
     OTPVerification.objects.filter(
         phone_number=phone_number,
@@ -93,7 +94,8 @@ def create_otp(phone_number, purpose, post_id=None):
         post_id      = post_id,
         expires_at   = timezone.now() + timedelta(minutes=settings.OTP_EXPIRY_MINUTES),
     )
-    send_otp(phone_number, code, purpose)
+    # Send SMS in background so it doesn't block the response
+    threading.Thread(target=send_otp, args=(phone_number, code, purpose), daemon=True).start()
     return otp
 
 
