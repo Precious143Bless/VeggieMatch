@@ -67,6 +67,18 @@ class PostVegetableForm(forms.Form):
             raise forms.ValidationError("Minimum price is ₱1 per kg.")
         return price
 
+    def clean(self):
+        cleaned = super().clean()
+        level = cleaned.get('surplus_level')
+        qty   = cleaned.get('quantity')
+        limits = {'LOW': (5, 20), 'MEDIUM': (20, 100), 'HIGH': (100, 99999)}
+        hints  = {'LOW': '5–20 kg', 'MEDIUM': '20–100 kg', 'HIGH': '100+ kg'}
+        if level and qty is not None and level in limits:
+            mn, mx = limits[level]
+            if not (mn <= qty <= mx):
+                self.add_error('quantity', f'{level.capitalize()} surplus must be {hints[level]}.')
+        return cleaned
+
     def clean_farmer_photo(self):
         return self.cleaned_data.get('farmer_photo', '')
 

@@ -287,6 +287,26 @@ function setStep(n) {
   window.scrollTo(0, 0);
 }
 
+// ── Surplus level → quantity limits ──────────────────────────
+const surplusRules = { LOW: [5, 20], MEDIUM: [20, 100], HIGH: [100, 10000] };
+const surplusHints = { LOW: '5–20 kg', MEDIUM: '20–100 kg', HIGH: '100+ kg' };
+const qtyInput = document.querySelector('[name="quantity"]');
+const surplusSelect = document.querySelector('[name="surplus_level"]');
+
+function applySurplusLimits() {
+  const level = surplusSelect.value;
+  const [min, max] = surplusRules[level] || [0.1, 10000];
+  qtyInput.min = min;
+  qtyInput.max = max;
+  qtyInput.placeholder = `e.g. ${min} (${surplusHints[level]})`;
+  // Clamp existing value
+  const val = parseFloat(qtyInput.value);
+  if (qtyInput.value && (val < min || val > max)) qtyInput.value = min;
+}
+
+surplusSelect.addEventListener('change', applySurplusLimits);
+applySurplusLimits(); // run on load
+
 // ── Submit post form ──────────────────────────────────────────
 document.getElementById('postForm').addEventListener('submit', async (e) => {
   e.preventDefault();

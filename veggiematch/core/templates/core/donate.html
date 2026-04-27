@@ -8,14 +8,11 @@
   <header class="vm-appbar">
     <div class="vm-appbar-inner">
       <div class="vm-appbar-left">
-        <a href="{% url 'home' %}" class="vm-back-arrow"><i class="bi bi-arrow-left"></i></a>
-        <div class="vm-rescue-appbar-icon">🍲</div>
         <div>
           <div class="vm-appbar-title">Donate Items</div>
           <div class="vm-appbar-sub">Free for community kitchens</div>
         </div>
       </div>
-      <span class="vm-rescue-count-pill">{{ posts|length }} available</span>
     </div>
   </header>
 
@@ -27,24 +24,28 @@
     </div>
   </div>
 
-  <!-- SDG banner -->
-  <div class="vm-rescue-banner">
-    <div class="vm-rescue-banner-inner">
-      <div>
-        <div class="vm-rescue-banner-tag">🌱 SDG 2 & 12</div>
-        <div class="vm-rescue-banner-title">Help Donate Food Waste</div>
-        <div class="vm-rescue-banner-sub">Unclaimed vegetables — take them free for feeding programs.</div>
-      </div>
-      <div class="vm-rescue-banner-emoji">🥦🥕🍅</div>
+  <!-- SDG banner removed for consistent design -->
+
+  <!-- Filter -->
+  <div class="vm-filter-wrap">
+    <div class="vm-filter-scroll">
+      <button class="vm-filter-btn active" data-level="ALL">All</button>
+      <button class="vm-filter-btn low"    data-level="LOW">🟡 Low</button>
+      <button class="vm-filter-btn medium" data-level="MEDIUM">🟠 Medium</button>
+      <button class="vm-filter-btn high"   data-level="HIGH">🔴 High</button>
     </div>
   </div>
 
   <!-- Listings -->
   <div class="vm-rescue-listings">
+    <div class="vm-listings-header" style="padding:0 0 0.75rem;">
+      <span class="vm-listings-title">🍲 All Donations</span>
+      <span class="vm-count-pill" id="rescueCountPill">{{ posts|length }}</span>
+    </div>
     {% if posts %}
     <div class="vm-rescue-grid" id="rescueGrid">
       {% for post in posts %}
-      <div class="vm-post-card vm-rescue-card" data-name="{{ post.vegetable|lower }}">
+      <div class="vm-post-card vm-rescue-card" data-name="{{ post.vegetable|lower }}" data-level="{{ post.surplus_level }}">
 
         <div class="vm-post-img">
           {% if post.veggie_photo %}
@@ -222,8 +223,28 @@ const csrf = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 
 document.getElementById('rescueSearchInput').addEventListener('input', function () {
   const q = this.value.toLowerCase().trim();
+  let visible = 0;
   document.querySelectorAll('#rescueGrid .vm-post-card').forEach(card => {
-    card.style.display = !q || card.dataset.name.includes(q) ? '' : 'none';
+    const show = !q || card.dataset.name.includes(q);
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('rescueCountPill').textContent = visible;
+});
+
+let rescueActiveLevel = 'ALL';
+document.querySelectorAll('.vm-filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.vm-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    rescueActiveLevel = btn.dataset.level;
+    let visible = 0;
+    document.querySelectorAll('#rescueGrid .vm-post-card').forEach(card => {
+      const show = rescueActiveLevel === 'ALL' || card.dataset.level === rescueActiveLevel;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    document.getElementById('rescueCountPill').textContent = visible;
   });
 });
 

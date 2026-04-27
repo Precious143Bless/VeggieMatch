@@ -22,17 +22,35 @@
   </div>
 </header>
 
-<!-- ── Banner ── -->
+<!-- ── Hero Banner ── -->
 <div class="vm-banner-wrap">
   <div class="vm-banner">
     <div class="vm-banner-text">
-      <div class="vm-banner-tag">🌱 Fresh Today</div>
-      <h2 class="vm-banner-title">This Week's<br>Surplus Picks</h2>
-      <p class="vm-banner-sub">Direct from farmers.<br>Claim before time runs out.</p>
-      
+      <div class="vm-banner-tag">🌱 La Trinidad Trading Post</div>
+      <h2 class="vm-banner-title">Fresh Vegetables,<br>Less Waste</h2>
+      <p class="vm-banner-sub">Buy surplus veggies from local farmers or claim free donations for your community.</p>
     </div>
     <div class="vm-banner-emoji">🥬🥕🍅</div>
   </div>
+</div>
+
+<!-- ── Quick Actions ── -->
+<div style="display:flex;gap:0.75rem;padding:0 1rem 0.5rem;">
+  <a href="{% url 'posted_veggies' %}" style="flex:1;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
+    <div style="font-size:1.6rem;">🛒</div>
+    <div style="font-size:0.82rem;font-weight:800;color:#1a6e2e;margin-top:0.3rem;">Buy Vegetables</div>
+    <div style="font-size:0.72rem;color:#555;">Fresh surplus picks</div>
+  </a>
+  <a href="{% url 'rescue_list' %}" style="flex:1;background:#fdecea;border:1.5px solid #ffcdd2;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
+    <div style="font-size:1.6rem;">🍲</div>
+    <div style="font-size:0.82rem;font-weight:800;color:#a81c1c;margin-top:0.3rem;">Free Donations</div>
+    <div style="font-size:0.72rem;color:#555;">Help reduce food waste</div>
+  </a>
+  <a href="{% url 'post_vegetable' %}" style="flex:1;background:#fff8e1;border:1.5px solid #ffe082;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
+    <div style="font-size:1.6rem;">📦</div>
+    <div style="font-size:0.82rem;font-weight:800;color:#e65100;margin-top:0.3rem;">Post Surplus</div>
+    <div style="font-size:0.72rem;color:#555;">Sell or donate yours</div>
+  </a>
 </div>
 
 <!-- ── Community Impact ── -->
