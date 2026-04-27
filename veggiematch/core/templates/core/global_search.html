@@ -1,0 +1,109 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<header class="vm-appbar">
+  <div class="vm-appbar-inner">
+    <div class="vm-appbar-left">
+      <div>
+        <div class="vm-appbar-title">Search Results</div>
+        <div class="vm-appbar-sub">{% if request.GET.q %}"{{ request.GET.q }}"{% else %}All posts{% endif %}</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="vm-search-wrap">
+  <form method="get" action="{% url 'global_search' %}" class="vm-search-box">
+    <i class="bi bi-search vm-search-icon"></i>
+    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search vegetables, farmers..." class="vm-search-input" autocomplete="off" autofocus/>
+  </form>
+</div>
+
+<div class="vm-listings-wrap">
+  <div class="vm-listings-header">
+    <span class="vm-listings-title">Results</span>
+    <span class="vm-count-pill">{{ posts.paginator.count }}</span>
+  </div>
+
+  {% if posts %}
+  <div class="vm-grid">
+    {% for post in posts %}
+    <div class="vm-post-card {% if post.status == 'RESCUE' %}vm-rescue-card{% endif %}">
+      <div class="vm-post-img">
+        {% if post.veggie_photo %}
+          <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
+        {% else %}
+          <div class="vm-post-img-placeholder">🥬</div>
+        {% endif %}
+        {% if post.status == 'RESCUE' %}
+          <span class="vm-surplus-badge rescue-badge">🆓 Free</span>
+        {% elif post.surplus_level == 'LOW' %}
+          <span class="vm-surplus-badge low">🟡 Low</span>
+        {% elif post.surplus_level == 'MEDIUM' %}
+          <span class="vm-surplus-badge medium">🟠 Medium</span>
+        {% else %}
+          <span class="vm-surplus-badge high">🔴 High</span>
+        {% endif %}
+      </div>
+      <div class="vm-post-body">
+        <div class="vm-post-name">{{ post.vegetable }}</div>
+        <div class="vm-post-farmer">
+          {% if post.farmer_photo %}
+            <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #a3d9b1;">
+          {% else %}
+            <i class="bi bi-person-fill"></i>
+          {% endif %}
+          {{ post.farmer_name }}
+        </div>
+        <div class="vm-post-meta">
+          <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg</span>
+          {% if post.status == 'RESCUE' %}
+            <span class="text-success fw-bold"><i class="bi bi-gift-fill"></i> Free</span>
+          {% else %}
+            <span><i class="bi bi-tag-fill"></i> ₱{{ post.price_per_kg }}/kg</span>
+          {% endif %}
+        </div>
+        <div class="vm-post-timer">
+          <i class="bi bi-calendar-check-fill"></i>
+          <span>Posted {{ post.created_at|date:"M d, Y g:i A" }}</span>
+        </div>
+        <div class="vm-post-actions">
+          {% if post.status == 'RESCUE' %}
+            <a href="{% url 'rescue_start' post.pk %}" class="vm-rescue-btn">
+              <i class="bi bi-hand-index-thumb-fill"></i> Claim
+            </a>
+          {% else %}
+            <a href="{% url 'buy_start' post.pk %}" class="vm-claim-btn">
+              <i class="bi bi-basket-fill"></i> Buy
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if posts.has_previous or posts.has_next %}
+  <div class="d-flex gap-2 justify-content-center mt-3">
+    {% if posts.has_previous %}
+      <a href="?q={{ request.GET.q }}&page={{ posts.previous_page_number }}" class="vm-btn-green px-4">← Prev</a>
+    {% endif %}
+    {% if posts.has_next %}
+      <a href="?q={{ request.GET.q }}&page={{ posts.next_page_number }}" class="vm-btn-green px-4">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="vm-empty-state">
+    <div class="vm-empty-emoji">🔍</div>
+    <h4>No results found</h4>
+    <p>Try searching by vegetable name or farmer name.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

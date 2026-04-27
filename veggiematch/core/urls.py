@@ -36,4 +36,6 @@ urlpatterns = [
     path('rescue/verify/',                     views.rescue_verify,       name='rescue_verify'),
     path('rescue/<int:post_id>/',              views.rescue_start,        name='rescue_start'),
 
+    # Search
+    path('search/', views.global_search, name='global_search'),
 ]

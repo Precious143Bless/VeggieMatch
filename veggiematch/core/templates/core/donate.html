@@ -4,7 +4,6 @@
 {% block content %}
 <div class="vm-rescue-page">
 
-  <!-- App bar -->
   <header class="vm-appbar">
     <div class="vm-appbar-inner">
       <div class="vm-appbar-left">
@@ -16,17 +15,13 @@
     </div>
   </header>
 
-  <!-- Search -->
   <div class="vm-search-wrap">
-    <div class="vm-search-box">
+    <form method="get" action="{% url 'global_search' %}" class="vm-search-box">
       <i class="bi bi-search vm-search-icon"></i>
-      <input type="text" id="rescueSearchInput" placeholder="Search donations..." class="vm-search-input"/>
-    </div>
+      <input type="text" name="q" placeholder="Search vegetables, farmers..." class="vm-search-input" autocomplete="off"/>
+    </form>
   </div>
 
-  <!-- SDG banner removed for consistent design -->
-
-  <!-- Filter -->
   <div class="vm-filter-wrap">
     <div class="vm-filter-scroll">
       <button class="vm-filter-btn active" data-level="ALL">All</button>
@@ -36,17 +31,16 @@
     </div>
   </div>
 
-  <!-- Listings -->
   <div class="vm-rescue-listings">
     <div class="vm-listings-header" style="padding:0 0 0.75rem;">
       <span class="vm-listings-title">🍲 All Donations</span>
       <span class="vm-count-pill" id="rescueCountPill">{{ posts|length }}</span>
     </div>
+
     {% if posts %}
     <div class="vm-rescue-grid" id="rescueGrid">
       {% for post in posts %}
       <div class="vm-post-card vm-rescue-card" data-name="{{ post.vegetable|lower }}" data-level="{{ post.surplus_level }}">
-
         <div class="vm-post-img">
           {% if post.veggie_photo %}
             <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
@@ -55,7 +49,6 @@
           {% endif %}
           <span class="vm-surplus-badge rescue-badge">🆓 Free</span>
         </div>
-
         <div class="vm-post-body">
           <div class="vm-post-name">{{ post.vegetable }}</div>
           <div class="vm-post-farmer">
@@ -67,12 +60,10 @@
             {% endif %}
             {{ post.farmer_name }}
           </div>
-
           <div class="vm-post-meta">
             <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg remaining</span>
             <span class="text-success fw-bold"><i class="bi bi-gift-fill"></i> Free</span>
           </div>
-
           <div class="vm-post-meta" style="margin-top:0.2rem;">
             <span><i class="bi bi-geo-alt-fill"></i> {{ post.pickup_address|truncatechars:30 }}</span>
           </div>
@@ -80,7 +71,6 @@
             <i class="bi bi-calendar-check-fill"></i>
             <span>Posted {{ post.created_at|date:"M d, Y g:i A" }}</span>
           </div>
-
           <div class="vm-post-actions mt-2">
             <a href="{% url 'rescue_start' post.pk %}" class="vm-rescue-btn flex-grow-1">
               <i class="bi bi-hand-index-thumb-fill"></i> Claim
@@ -93,24 +83,21 @@
                     data-price="{{ post.price_per_kg }}"
                     data-note="{{ post.pickup_note }}"
                     data-surplus="{{ post.surplus_level }}"
-                    data-type="donate"
-                    title="Manage Post">
+                    data-type="donate">
               <i class="bi bi-gear-fill"></i> Manage
             </button>
           </div>
         </div>
-
       </div>
       {% endfor %}
     </div>
-
     {% else %}
     <div class="vm-empty-state" style="margin:1rem;">
       <div class="vm-empty-emoji">🌿</div>
       <h4>No items available for donation right now</h4>
       <p>Check back later — unclaimed listings appear here automatically.</p>
       <a href="{% url 'home' %}" class="vm-btn-green">
-        <i class="bi bi-house-fill me-1"></i> Back to Listings
+        <i class="bi bi-house-fill me-1"></i> Back to Home
       </a>
     </div>
     {% endif %}
@@ -118,218 +105,9 @@
 
 </div>
 
-<!-- ══ Manage Modal ══ -->
-<div class="modal fade" id="manageModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content vm-modal text-center">
-      <div class="vm-modal-body py-4">
-        <div id="manageStep1">
-          <div style="font-size:2.5rem;">⚙️</div>
-          <h5 class="fw-bold mt-3 mb-1">Manage Post</h5>
-          <p class="text-muted mb-1" style="font-size:0.9rem;"><strong id="manageVeggieName"></strong></p>
-          <p class="text-muted mb-3" style="font-size:0.85rem;">We'll send an OTP to your registered number to verify ownership.</p>
-          <div class="vm-err d-none mb-2" id="err-manage-otp"></div>
-          <div class="d-flex gap-2 justify-content-center">
-            <button class="vm-btn-green px-4" id="sendManageOtpBtn"><i class="bi bi-send-fill me-1"></i> Send OTP</button>
-            <button class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
-          </div>
-        </div>
-        <div id="manageStep2" style="display:none;">
-          <div style="font-size:2rem;">📱</div>
-          <p class="text-muted small mt-2 mb-1">OTP sent to <strong id="managePhoneDisplay"></strong></p>
-          <input type="text" id="manageOtpInput" class="otp-input form-control mb-2" maxlength="6" inputmode="numeric" placeholder="_ _ _ _ _ _">
-          <div class="vm-err d-none mb-2" id="err-manage-otp-verify"></div>
-          <button class="vm-btn-green w-100" id="confirmManageOtpBtn"><i class="bi bi-unlock-fill me-1"></i> Unlock Actions</button>
-        </div>
-        <div id="manageStep3" style="display:none;">
-          <div style="font-size:2rem;">✅</div>
-          <p class="fw-bold mt-2 mb-3 text-success">Verified! Choose an action:</p>
-          <div class="d-grid gap-2">
-            <button class="btn btn-warning fw-bold" id="actionEditBtn" style="border-radius:12px;"><i class="bi bi-pencil-fill me-2"></i>Edit Post</button>
-            <button class="vm-btn-red" id="actionDeleteBtn"><i class="bi bi-trash-fill me-2"></i>Delete Post</button>
-            <button class="btn btn-light fw-bold" data-bs-dismiss="modal">Cancel</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ Edit Modal ══ -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content vm-modal">
-      <div class="vm-modal-top">
-        <div class="vm-form-icon mb-1">✏️</div>
-        <h5 class="vm-modal-title">Edit Donated Post</h5>
-        <p class="vm-modal-sub" id="editModalSub"></p>
-        <button type="button" class="vm-modal-close" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="vm-modal-body">
-        <div id="editStep2">
-          <div class="vm-err d-none mb-2" id="err-edit-otp"></div>
-          <div class="vm-field mb-2"><label class="vm-label">Vegetable Name</label><input type="text" id="edit_vegetable" class="form-control"/></div>
-          <div class="row g-2 mb-2">
-            <div class="col-6"><label class="vm-label">Quantity (kg)</label><input type="number" id="edit_quantity" class="form-control" step="0.1" min="0.1"/></div>
-            <div class="col-6"><label class="vm-label">Price/kg (₱)</label><input type="number" id="edit_price" class="form-control" step="0.5" min="1"/></div>
-          </div>
-          <div class="vm-field mb-2"><label class="vm-label">Surplus Level</label>
-            <select id="edit_surplus" class="form-select">
-              <option value="LOW">🟡 Low (5–20 kg)</option>
-              <option value="MEDIUM">🟠 Medium (20–100 kg)</option>
-              <option value="HIGH">🔴 High (100+ kg)</option>
-            </select>
-          </div>
-          <div class="vm-field mb-3"><label class="vm-label">Further Instructions</label><input type="text" id="edit_note" class="form-control" placeholder="Stall no., landmark..."/></div>
-          <button class="vm-btn-green w-100" id="confirmEditBtn"><i class="bi bi-check-circle-fill me-1"></i> Save Changes</button>
-        </div>
-        <div id="editStep3" style="display:none;">
-          <div class="text-center py-2"><div style="font-size:2.5rem;">✅</div>
-          <p class="mt-2 fw-bold text-success">Post updated!</p>
-          <button class="vm-btn-green px-4 mt-2" onclick="location.reload()">OK</button></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ Delete Confirm Modal ══ -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content vm-modal text-center">
-      <div class="vm-modal-body py-4">
-        <div style="font-size:3rem;">🗑️</div>
-        <h5 class="fw-bold mt-3 mb-1">Delete Post?</h5>
-        <p class="text-muted mb-3" style="font-size:0.9rem;"><strong id="deleteVeggieName"></strong></p>
-        <div class="d-flex gap-2 justify-content-center">
-          <button class="vm-btn-red px-4" id="confirmDeleteBtn"><i class="bi bi-trash-fill me-1"></i> Yes, Delete</button>
-          <button class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
-        </div>
-        <div id="deleteStep3" style="display:none;margin-top:1rem;">
-          <div style="font-size:2.5rem;">✅</div>
-          <p class="mt-2 fw-bold text-success">Post deleted.</p>
-          <button class="vm-btn-green px-4 mt-2" onclick="location.reload()">OK</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 {% endblock %}
-
 {% block extra_js %}
 <script>
 const csrf = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
-
-document.getElementById('rescueSearchInput').addEventListener('input', function () {
-  const q = this.value.toLowerCase().trim();
-  let visible = 0;
-  document.querySelectorAll('#rescueGrid .vm-post-card').forEach(card => {
-    const show = !q || card.dataset.name.includes(q);
-    card.style.display = show ? '' : 'none';
-    if (show) visible++;
-  });
-  document.getElementById('rescueCountPill').textContent = visible;
-});
-
-let rescueActiveLevel = 'ALL';
-document.querySelectorAll('.vm-filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.vm-filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    rescueActiveLevel = btn.dataset.level;
-    let visible = 0;
-    document.querySelectorAll('#rescueGrid .vm-post-card').forEach(card => {
-      const show = rescueActiveLevel === 'ALL' || card.dataset.level === rescueActiveLevel;
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
-    });
-    document.getElementById('rescueCountPill').textContent = visible;
-  });
-});
-
-let managePostId = '', manageVeggie = '', manageData = {};
-
-document.querySelectorAll('.btn-manage-open').forEach(btn => {
-  btn.addEventListener('click', () => {
-    managePostId = btn.dataset.postId;
-    manageVeggie = btn.dataset.veggie;
-    manageData   = { vegetable: btn.dataset.vegetable, quantity: btn.dataset.quantity, price: btn.dataset.price, note: btn.dataset.note, surplus: btn.dataset.surplus };
-    document.getElementById('manageVeggieName').textContent = manageVeggie;
-    document.getElementById('manageStep1').style.display = '';
-    document.getElementById('manageStep2').style.display = 'none';
-    document.getElementById('manageStep3').style.display = 'none';
-    document.getElementById('manageOtpInput').value = '';
-    ['err-manage-otp','err-manage-otp-verify'].forEach(id => { const e=document.getElementById(id); e.textContent=''; e.classList.add('d-none'); });
-    new bootstrap.Modal(document.getElementById('manageModal')).show();
-  });
-});
-
-document.getElementById('sendManageOtpBtn').addEventListener('click', async () => {
-  const btn=document.getElementById('sendManageOtpBtn'), errEl=document.getElementById('err-manage-otp');
-  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
-  const res=await fetch(`/post/${managePostId}/manage/`,{method:'POST',headers:{'X-CSRFToken':csrf(),'Content-Type':'application/x-www-form-urlencoded'},body:''});
-  const data=await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-send-fill me-1"></i> Send OTP';
-  if(data.ok){document.getElementById('managePhoneDisplay').textContent=data.phone;document.getElementById('manageStep1').style.display='none';document.getElementById('manageStep2').style.display='';document.getElementById('manageOtpInput').focus();}
-  else{errEl.textContent=data.error||'Failed to send OTP.';errEl.classList.remove('d-none');}
-});
-
-document.getElementById('confirmManageOtpBtn').addEventListener('click', async () => {
-  const btn=document.getElementById('confirmManageOtpBtn'), errEl=document.getElementById('err-manage-otp-verify');
-  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Verifying...';
-  const fd=new FormData(); fd.append('otp_code',document.getElementById('manageOtpInput').value);
-  const res=await fetch(`/post/${managePostId}/manage/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
-  const data=await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-unlock-fill me-1"></i> Unlock Actions';
-  if(data.ok){document.getElementById('manageStep2').style.display='none';document.getElementById('manageStep3').style.display='';}
-  else{errEl.textContent=data.error||'Invalid OTP.';errEl.classList.remove('d-none');}
-});
-document.getElementById('manageOtpInput').addEventListener('input',function(){if(this.value.length===6)document.getElementById('confirmManageOtpBtn').click();});
-
-document.getElementById('actionEditBtn').addEventListener('click', () => {
-  bootstrap.Modal.getInstance(document.getElementById('manageModal')).hide();
-  document.getElementById('editModalSub').textContent=manageData.vegetable;
-  document.getElementById('edit_vegetable').value=manageData.vegetable;
-  document.getElementById('edit_quantity').value=manageData.quantity;
-  document.getElementById('edit_price').value=manageData.price;
-  document.getElementById('edit_note').value=manageData.note;
-  document.getElementById('edit_surplus').value=manageData.surplus;
-  document.getElementById('editStep2').style.display='';
-  document.getElementById('editStep3').style.display='none';
-  const e=document.getElementById('err-edit-otp'); e.textContent=''; e.classList.add('d-none');
-  setTimeout(()=>new bootstrap.Modal(document.getElementById('editModal')).show(),300);
-});
-document.getElementById('confirmEditBtn').addEventListener('click', async () => {
-  const btn=document.getElementById('confirmEditBtn'), errEl=document.getElementById('err-edit-otp');
-  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
-  const fd=new FormData();
-  fd.append('otp_code',''); fd.append('vegetable',document.getElementById('edit_vegetable').value);
-  fd.append('quantity',document.getElementById('edit_quantity').value); fd.append('price_per_kg',document.getElementById('edit_price').value);
-  fd.append('pickup_note',document.getElementById('edit_note').value); fd.append('surplus_level',document.getElementById('edit_surplus').value);
-  const res=await fetch(`/post/${managePostId}/edit/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
-  const data=await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-check-circle-fill me-1"></i> Save Changes';
-  if(data.ok){document.getElementById('editStep2').style.display='none';document.getElementById('editStep3').style.display='';}
-  else{errEl.textContent=data.error||'Error.';errEl.classList.remove('d-none');}
-});
-
-document.getElementById('actionDeleteBtn').addEventListener('click', () => {
-  bootstrap.Modal.getInstance(document.getElementById('manageModal')).hide();
-  document.getElementById('deleteVeggieName').textContent=manageVeggie;
-  document.getElementById('deleteStep3').style.display='none';
-  document.getElementById('confirmDeleteBtn').style.display='';
-  setTimeout(()=>new bootstrap.Modal(document.getElementById('deleteModal')).show(),300);
-});
-document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
-  const btn=document.getElementById('confirmDeleteBtn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Deleting...';
-  const fd=new FormData(); fd.append('otp_code','');
-  const res=await fetch(`/post/${managePostId}/delete/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
-  const data=await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-trash-fill me-1"></i> Yes, Delete';
-  if(data.ok){document.getElementById('deleteStep3').style.display='';btn.style.display='none';document.querySelector('#deleteModal [data-bs-dismiss="modal"]').style.display='none';}
-  else{alert(data.error||'Error.');}
-});
 </script>
 {% endblock %}

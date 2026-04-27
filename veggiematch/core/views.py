@@ -8,9 +8,11 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.conf import settings
 from datetime import timedelta
+from django.db.models import Q
+from django.core.paginator import Paginator
 
 from .models import VegetablePost, BuyRecord, RescueRecord
-from .forms  import PostVegetableForm, OTPForm, BuyForm, RescueForm
+from .forms  import PostVegetableForm, OTPForm, BuyForm, RescueForm, GlobalSearchForm
 from .sms    import create_otp, verify_otp, send_buy_notification, send_buy_confirmation, send_rescue_notification, send_rescue_confirmation, send_expiry_warning
 from django.db.models import Sum
 
@@ -675,3 +677,31 @@ def post_delete_verify(request, post_id):
             return JsonResponse({'ok': True, 'message': 'Post deleted successfully.'})
         return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})
     return JsonResponse({'ok': False})
+
+
+# ── Global Search ──────────────────────────────────────────────────────────────
+
+def global_search(request):
+    form = GlobalSearchForm(request.GET or None)
+    qs = VegetablePost.objects.all().order_by('-created_at')
+
+    if form.is_valid():
+        q = form.cleaned_data.get('q')
+        status = form.cleaned_data.get('status') or ''
+        if q:
+            qs = qs.filter(
+                Q(vegetable__icontains=q) |
+                Q(farmer_name__icontains=q) |
+                Q(pickup_address__icontains=q)
+            )
+        if status:
+            qs = qs.filter(status=status)
+
+    paginator = Paginator(qs, 20)
+    page = request.GET.get('page')
+    posts = paginator.get_page(page)
+
+    return render(request, 'core/global_search.html', {
+        'form': form,
+        'posts': posts,
+    })

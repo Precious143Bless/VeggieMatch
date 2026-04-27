@@ -143,3 +143,20 @@ class RescueForm(forms.Form):
 
     def clean_claimer_photo(self):
         return self.cleaned_data.get('claimer_photo', '')
+
+
+class GlobalSearchForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        label='',
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Search vegetable, farmer or address...',
+            'class': 'form-control',
+            'aria-label': 'Search'
+        })
+    )
+    status = forms.ChoiceField(
+        required=False,
+        choices=[('', 'Any'), ('ACTIVE', 'Posted'), ('RESCUE', 'Donate')],
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
