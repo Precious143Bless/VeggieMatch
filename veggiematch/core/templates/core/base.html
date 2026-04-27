@@ -11,10 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="{% static 'core/css/style.css' %}"/>
   <style>
-    /* ── Desktop centering — keeps the mobile layout intact ── */
-    body {
-      background: #f0f4f0;
-    }
+    body { background: #f0f4f0; }
     .vm-main {
       max-width: 480px;
       margin-left: auto;
@@ -24,19 +21,15 @@
       box-shadow: 0 0 40px rgba(0,0,0,0.10);
     }
     .vm-bottom-nav {
-      max-width: 480px;
-      left: 0;
-      right: 0;
-      margin-left: auto;
-      margin-right: auto;
+      width: 480px;
+      left: 50%;
+      right: auto;
+      transform: translateX(-50%);
     }
   </style>
 </head>
 <body>
 
-
-
-<!-- ── Flash Messages ── -->
 {% if messages %}
 <div class="vm-messages">
   {% for msg in messages %}
@@ -48,25 +41,20 @@
 </div>
 {% endif %}
 
-<!-- ── Main Content ── -->
 <main class="vm-main">
   {% block content %}{% endblock %}
 </main>
 
-<!-- ── Bottom Navigation ── -->
 <nav class="vm-bottom-nav">
-  <a href="{% url 'home' %}"
-     class="vm-bnav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+  <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">
     <i class="bi bi-house-fill"></i>
     <span>Home</span>
   </a>
-  <a href="{% url 'posted_veggies' %}"
-     class="vm-bnav-item {% if 'posted' in request.resolver_match.url_name %}active{% endif %}">
+  <a href="{% url 'posted_veggies' %}" class="{% if 'posted' in request.resolver_match.url_name %}active{% endif %}">
     <i class="bi bi-basket2-fill"></i>
     <span>Vegetables</span>
   </a>
-  <a href="{% url 'rescue_list' %}"
-     class="vm-bnav-item {% if 'rescue' in request.resolver_match.url_name %}active{% endif %}">
+  <a href="{% url 'rescue_list' %}" class="{% if 'rescue' in request.resolver_match.url_name %}active{% endif %}">
     <i class="bi bi-heart-fill"></i>
     <span>Donate</span>
   </a>

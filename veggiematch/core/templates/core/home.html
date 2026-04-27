@@ -22,14 +22,6 @@
   </div>
 </header>
 
-<!-- ── Search ── -->
-<div class="vm-search-wrap">
-  <div class="vm-search-box">
-    <i class="bi bi-search vm-search-icon"></i>
-    <input type="text" id="searchInput" placeholder="Search vegetables..." class="vm-search-input"/>
-  </div>
-</div>
-
 <!-- ── Banner ── -->
 <div class="vm-banner-wrap">
   <div class="vm-banner">
@@ -64,40 +56,23 @@
   </div>
 </div>
 
-<!-- ── Filter ── -->
-<div class="vm-filter-wrap">
-  <div class="vm-filter-scroll">
-    <button class="vm-filter-btn active" data-level="ALL">All</button>
-    <button class="vm-filter-btn low"    data-level="LOW">🟡 Low</button>
-    <button class="vm-filter-btn medium" data-level="MEDIUM">🟠 Medium</button>
-    <button class="vm-filter-btn high"   data-level="HIGH">🔴 High</button>
-  </div>
-</div>
-
 <!-- ── Listings ── -->
 <div class="vm-listings-wrap">
   <div class="vm-listings-header">
-    <span class="vm-listings-title">Available Now</span>
-    <span class="vm-count-pill" id="countPill">{{ posts|length }}</span>
+    <span class="vm-listings-title">🥬 Recent Posts</span>
+    <a href="{% url 'posted_veggies' %}" class="vm-count-pill" style="text-decoration:none;">View All</a>
   </div>
 
   {% if posts %}
   <div class="vm-grid" id="postGrid">
-    {% for post in posts %}
-    <div class="vm-post-card" data-level="{{ post.surplus_level }}" data-name="{{ post.vegetable|lower }}">
+    {% for post in posts|slice:":1" %}
+    <div class="vm-post-card" data-name="{{ post.vegetable|lower }}">
 
       <div class="vm-post-img">
         {% if post.veggie_photo %}
           <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
         {% else %}
           <div class="vm-post-img-placeholder">🥬</div>
-        {% endif %}
-        {% if post.surplus_level == 'LOW' %}
-          <span class="vm-surplus-badge low">🟡 Low</span>
-        {% elif post.surplus_level == 'MEDIUM' %}
-          <span class="vm-surplus-badge medium">🟠 Medium</span>
-        {% else %}
-          <span class="vm-surplus-badge high">🔴 High</span>
         {% endif %}
       </div>
 
@@ -117,25 +92,14 @@
           <span><i class="bi bi-tag-fill"></i> ₱{{ post.price_per_kg }}/kg</span>
         </div>
         <div class="vm-post-timer">
-          <i class="bi bi-clock-fill"></i>
-          <span class="vm-timer" data-expiry="{{ post.expiry_time|date:'c' }}">calculating...</span>
+          <i class="bi bi-calendar-check-fill"></i>
+          <span>Posted {{ post.created_at|date:"M d, Y g:i A" }}</span>
+          <span class="vm-timer d-none" data-expiry="{{ post.expiry_time|date:'c' }}"></span>
         </div>
         <div class="vm-post-actions">
           <a href="{% url 'buy_start' post.pk %}" class="vm-claim-btn">
             <i class="bi bi-basket-fill"></i> Buy
           </a>
-          <button type="button" class="vm-manage-btn btn-manage-open"
-                  data-post-id="{{ post.pk }}"
-                  data-veggie="{{ post.vegetable }}"
-                  data-vegetable="{{ post.vegetable }}"
-                  data-quantity="{{ post.quantity }}"
-                  data-price="{{ post.price_per_kg }}"
-                  data-note="{{ post.pickup_note }}"
-                  data-surplus="{{ post.surplus_level }}"
-                  data-type="active"
-                  title="Manage Post">
-            <i class="bi bi-gear-fill"></i> Manage
-          </button>
         </div>
       </div>
 
@@ -151,6 +115,58 @@
     <a href="{% url 'post_vegetable' %}" class="vm-btn-green">
       <i class="bi bi-plus-circle me-1"></i> Post Vegetables
     </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Recent Donations ── -->
+<div class="vm-listings-wrap" style="padding-top:0;">
+  <div class="vm-listings-header">
+    <span class="vm-listings-title">🍲 Recent Donations</span>
+    <a href="{% url 'rescue_list' %}" class="vm-count-pill" style="text-decoration:none;">View All</a>
+  </div>
+
+  {% if donate_posts %}
+  <div class="vm-grid">
+    {% for post in donate_posts %}
+    <div class="vm-post-card vm-rescue-card">
+      <div class="vm-post-img">
+        {% if post.veggie_photo %}
+          <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
+        {% else %}
+          <div class="vm-post-img-placeholder">🥬</div>
+        {% endif %}
+        <span class="vm-surplus-badge rescue-badge">🆓 Free</span>
+      </div>
+      <div class="vm-post-body">
+        <div class="vm-post-name">{{ post.vegetable }}</div>
+        <div class="vm-post-farmer">
+          {% if post.farmer_photo %}
+            <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #ffcdd2;">
+          {% else %}
+            <i class="bi bi-person-fill"></i>
+          {% endif %}
+          {{ post.farmer_name }}
+        </div>
+        <div class="vm-post-meta">
+          <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg</span>
+          <span class="text-success fw-bold"><i class="bi bi-gift-fill"></i> Free</span>
+        </div>
+        <div class="vm-post-actions">
+          <a href="{% url 'rescue_start' post.pk %}" class="vm-rescue-btn">
+            <i class="bi bi-hand-index-thumb-fill"></i> Claim
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="vm-empty-state">
+    <div class="vm-empty-emoji">🍲</div>
+    <h4>No donations yet</h4>
+    <p>Unclaimed vegetables will appear here.</p>
   </div>
   {% endif %}
 </div>

@@ -19,6 +19,14 @@
     </div>
   </header>
 
+  <!-- Search -->
+  <div class="vm-search-wrap">
+    <div class="vm-search-box">
+      <i class="bi bi-search vm-search-icon"></i>
+      <input type="text" id="rescueSearchInput" placeholder="Search donations..." class="vm-search-input"/>
+    </div>
+  </div>
+
   <!-- SDG banner -->
   <div class="vm-rescue-banner">
     <div class="vm-rescue-banner-inner">
@@ -34,9 +42,9 @@
   <!-- Listings -->
   <div class="vm-rescue-listings">
     {% if posts %}
-    <div class="vm-grid">
+    <div class="vm-rescue-grid" id="rescueGrid">
       {% for post in posts %}
-      <div class="vm-post-card vm-rescue-card">
+      <div class="vm-post-card vm-rescue-card" data-name="{{ post.vegetable|lower }}">
 
         <div class="vm-post-img">
           {% if post.veggie_photo %}
@@ -66,6 +74,10 @@
 
           <div class="vm-post-meta" style="margin-top:0.2rem;">
             <span><i class="bi bi-geo-alt-fill"></i> {{ post.pickup_address|truncatechars:30 }}</span>
+          </div>
+          <div class="vm-post-timer">
+            <i class="bi bi-calendar-check-fill"></i>
+            <span>Posted {{ post.created_at|date:"M d, Y g:i A" }}</span>
           </div>
 
           <div class="vm-post-actions mt-2">
@@ -207,6 +219,14 @@
 {% block extra_js %}
 <script>
 const csrf = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+document.getElementById('rescueSearchInput').addEventListener('input', function () {
+  const q = this.value.toLowerCase().trim();
+  document.querySelectorAll('#rescueGrid .vm-post-card').forEach(card => {
+    card.style.display = !q || card.dataset.name.includes(q) ? '' : 'none';
+  });
+});
+
 let managePostId = '', manageVeggie = '', manageData = {};
 
 document.querySelectorAll('.btn-manage-open').forEach(btn => {

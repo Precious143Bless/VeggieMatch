@@ -148,12 +148,13 @@ def home(request):
     _cleanup_expired_pending(request)
     _maybe_cleanup_old_otps(request)
     posts = VegetablePost.objects.filter(status=VegetablePost.STATUS_ACTIVE).order_by('expiry_time')
+    donate_posts = VegetablePost.objects.filter(status=VegetablePost.STATUS_RESCUE).order_by('-created_at')[:1]
     impact = {
         'kg_rescued':   RescueRecord.objects.aggregate(total=Sum('quantity_kg'))['total'] or 0,
         'posts_donated': VegetablePost.objects.filter(status__in=[VegetablePost.STATUS_RESCUE, VegetablePost.STATUS_CLAIMED]).count(),
         'kg_sold':      BuyRecord.objects.aggregate(total=Sum('quantity_kg'))['total'] or 0,
     }
-    return render(request, 'core/home.html', {'posts': posts, 'impact': impact})
+    return render(request, 'core/home.html', {'posts': posts, 'donate_posts': donate_posts, 'impact': impact})
 
 
 # ── Category ──────────────────────────────────────────────────────────────────

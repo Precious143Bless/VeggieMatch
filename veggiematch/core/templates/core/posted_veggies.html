@@ -26,6 +26,16 @@
   </div>
 </div>
 
+<!-- Filter -->
+<div class="vm-filter-wrap">
+  <div class="vm-filter-scroll">
+    <button class="vm-filter-btn active" data-level="ALL">All</button>
+    <button class="vm-filter-btn low"    data-level="LOW">🟡 Low</button>
+    <button class="vm-filter-btn medium" data-level="MEDIUM">🟠 Medium</button>
+    <button class="vm-filter-btn high"   data-level="HIGH">🔴 High</button>
+  </div>
+</div>
+
 <!-- Listings -->
 <div class="vm-listings-wrap">
   <div class="vm-listings-header">
@@ -36,7 +46,7 @@
   {% if posts %}
   <div class="vm-grid" id="postGrid">
     {% for post in posts %}
-    <div class="vm-post-card" data-name="{{ post.vegetable|lower }}">
+    <div class="vm-post-card" data-name="{{ post.vegetable|lower }}" data-level="{{ post.surplus_level }}">
 
       <!-- Veggie photo -->
       <div class="vm-post-img">
@@ -55,15 +65,18 @@
       </div>
 
       <!-- Farmer face thumbnail -->
-      {% if post.farmer_photo %}
-      <div class="vm-farmer-thumb">
-        <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"/>
-      </div>
-      {% endif %}
 
       <div class="vm-post-body">
         <div class="vm-post-name">{{ post.vegetable }}</div>
-        <div class="vm-post-farmer"><i class="bi bi-person-fill"></i> {{ post.farmer_name }}</div>
+        <div class="vm-post-farmer">
+          {% if post.farmer_photo %}
+            <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #a3d9b1;">
+          {% else %}
+            <i class="bi bi-person-fill"></i>
+          {% endif %}
+          {{ post.farmer_name }}
+        </div>
         <div class="vm-post-meta">
           <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg</span>
           <span><i class="bi bi-tag-fill"></i> ₱{{ post.price_per_kg }}/kg</span>
@@ -244,6 +257,22 @@ document.getElementById('searchInput').addEventListener('input', function () {
     if (show) visible++;
   });
   document.getElementById('countPill').textContent = visible;
+});
+
+let activeLevel = 'ALL';
+document.querySelectorAll('.vm-filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.vm-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeLevel = btn.dataset.level;
+    let visible = 0;
+    document.querySelectorAll('.vm-post-card').forEach(card => {
+      const show = activeLevel === 'ALL' || card.dataset.level === activeLevel;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    document.getElementById('countPill').textContent = visible;
+  });
 });
 
 let managePostId = '', manageVeggie = '', manageData = {};

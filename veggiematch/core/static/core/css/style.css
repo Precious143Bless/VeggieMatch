@@ -45,7 +45,7 @@ body {
 }
 
 @media (min-width: 768px) {
-  body { padding-bottom: 0; }
+  body { padding-bottom: 70px; }
 }
 
 /* ══════════════════════════════════════════════
@@ -86,7 +86,7 @@ body {
    BOTTOM NAV — mobile only
 ══════════════════════════════════════════════ */
 .vm-bottom-nav {
-  display: none;
+  display: flex;
   position: fixed;
   bottom: 0; left: 0; right: 0;
   background: var(--white);
@@ -126,7 +126,6 @@ body {
 .vm-bottom-nav .vm-bnav-post i { font-size: 1.3rem; }
 
 @media (max-width: 767px) {
-  .vm-bottom-nav { display: flex; }
   /* hide desktop navbar links on mobile, keep logo */
   .vm-navbar .navbar-collapse { display: none !important; }
 }
@@ -960,12 +959,9 @@ body {
 /* Post cards grid */
 .vm-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
 }
-
-@media (min-width: 480px) { .vm-grid { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 700px) { .vm-grid { grid-template-columns: 1fr 1fr 1fr; } }
 
 .vm-post-card {
   background: var(--white);
@@ -1081,6 +1077,7 @@ body {
   display: flex;
   gap: 0.4rem;
   margin-top: auto;
+  flex-wrap: wrap;
 }
 
 .vm-claim-btn {
@@ -1408,6 +1405,12 @@ body {
 
 .vm-rescue-listings { padding: 0 1rem 1.5rem; }
 
+.vm-rescue-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
 /* Rescue card variant */
 .vm-rescue-card .vm-post-img { background: #fff5f5; }
 .vm-rescue-card .vm-post-img-placeholder { background: linear-gradient(135deg, #fdecea, #ffcdd2); }
@@ -1698,7 +1701,7 @@ body {
   border-radius: 10px;
   font-size: 0.82rem;
   font-weight: 800;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.5rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1707,6 +1710,9 @@ body {
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   min-height: 38px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .vm-manage-btn:hover {
   background: #e2e8f0;
@@ -1715,16 +1721,3 @@ body {
 }
 
 /* ── Wider cards — single column on mobile, 2 on tablet+ ── */
-.vm-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
-@media (min-width: 480px) {
-  .vm-grid { grid-template-columns: 1fr 1fr; gap: 0.85rem; }
-}
-
-@media (min-width: 700px) {
-  .vm-grid { grid-template-columns: 1fr 1fr 1fr; }
-}
