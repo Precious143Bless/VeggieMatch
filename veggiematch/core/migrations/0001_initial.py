@@ -1,4 +1,4 @@
-from django.db import migrations, models
+﻿from django.db import migrations, models
 import django.db.models.deletion
 
 
@@ -24,6 +24,7 @@ class Migration(migrations.Migration):
                 ('pickup_note',    models.CharField(blank=True, max_length=255)),
                 ('status',         models.CharField(choices=[('ACTIVE','Active'),('BOUGHT','Bought'),('CLAIMED','Fully Claimed (Donated)'),('RESCUE','Available for Donate')], default='ACTIVE', max_length=10)),
                 ('created_at',     models.DateTimeField(auto_now_add=True)),
+                ('donated_at',     models.DateTimeField(blank=True, null=True)),
                 ('expiry_time',    models.DateTimeField()),
                 ('expiry_notified', models.BooleanField(default=False)),
             ],
@@ -35,7 +36,7 @@ class Migration(migrations.Migration):
             name='BuyRecord',
             fields=[
                 ('id',           models.BigAutoField(primary_key=True, serialize=False)),
-                ('post',         models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='buy', to='core.vegetablepost')),
+                ('post',         models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='buys', to='core.vegetablepost')),
                 ('buyer_name',   models.CharField(max_length=100)),
                 ('buyer_number', models.CharField(max_length=20)),
                 ('buyer_photo',  models.ImageField(blank=True, null=True, upload_to='faces/buyers/')),
@@ -63,7 +64,7 @@ class Migration(migrations.Migration):
                 ('id',           models.BigAutoField(primary_key=True, serialize=False)),
                 ('phone_number', models.CharField(max_length=20)),
                 ('otp_code',     models.CharField(max_length=6)),
-                ('purpose',      models.CharField(choices=[('POST','Post'),('BUY','Buy'),('RESCUE','Rescue'),('DONATE','Donate'),('EDIT','Edit'),('DELETE','Delete'),('DASHBOARD','Dashboard')], max_length=10)),
+                ('purpose',      models.CharField(choices=[('POST','Post'),('BUY','Buy'),('RESCUE','Rescue'),('DONATE','Donate'),('EDIT','Edit'),('DELETE','Delete')], max_length=10)),
                 ('post_id',      models.BigIntegerField(blank=True, null=True)),
                 ('created_at',   models.DateTimeField(auto_now_add=True)),
                 ('expires_at',   models.DateTimeField()),

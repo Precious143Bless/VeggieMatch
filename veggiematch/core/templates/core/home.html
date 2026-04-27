@@ -168,6 +168,10 @@
           <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg</span>
           <span class="text-success fw-bold"><i class="bi bi-gift-fill"></i> Free</span>
         </div>
+        <div class="vm-post-timer">
+          <i class="bi bi-calendar-check-fill"></i>
+          <span>Donated {{ post.donated_at|date:"M d, Y g:i A" }}</span>
+        </div>
         <div class="vm-post-actions">
           <a href="{% url 'rescue_start' post.pk %}" class="vm-rescue-btn">
             <i class="bi bi-hand-index-thumb-fill"></i> Claim

@@ -22,8 +22,9 @@ from django.db.models import Sum
 def _sync_all_posts():
     VegetablePost.objects.filter(
         status=VegetablePost.STATUS_ACTIVE,
-        expiry_time__lte=timezone.now()
-    ).update(status=VegetablePost.STATUS_RESCUE)
+        expiry_time__lte=timezone.now(),
+        donated_at__isnull=True
+    ).update(status=VegetablePost.STATUS_RESCUE, donated_at=timezone.now())
 
 
 def _cleanup_old_otps():
@@ -542,7 +543,8 @@ def donate_verify(request, post_id):
         unlocked = post.pk in request.session.get('manage_unlocked', [])
         if unlocked or verify_otp(post.phone_number, otp_code, 'DONATE', post_id=post.pk):
             post.status = VegetablePost.STATUS_RESCUE
-            post.save(update_fields=['status'])
+            post.donated_at = timezone.now()
+            post.save(update_fields=['status', 'donated_at'])
             return JsonResponse({'ok': True, 'message': 'Post moved to Donate. Community kitchens can now claim it for free.'})
         return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})
     return JsonResponse({'ok': False})
