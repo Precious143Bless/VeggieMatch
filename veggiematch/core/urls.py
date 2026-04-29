@@ -36,6 +36,9 @@ urlpatterns = [
     path('rescue/verify/',                     views.rescue_verify,       name='rescue_verify'),
     path('rescue/<int:post_id>/',              views.rescue_start,        name='rescue_start'),
 
+    # Expiry notify (called by client-side timer)
+    path('post/<int:post_id>/notify-expiry/', views.notify_expiry, name='notify_expiry'),
+
     # Search
     path('search/', views.global_search, name='global_search'),
 ]

@@ -16,10 +16,10 @@
   </header>
 
   <div class="vm-search-wrap">
-    <form method="get" action="{% url 'global_search' %}" class="vm-search-box">
+    <div class="vm-search-box">
       <i class="bi bi-search vm-search-icon"></i>
-      <input type="text" name="q" placeholder="Search vegetables, farmers..." class="vm-search-input" autocomplete="off"/>
-    </form>
+      <input type="text" id="rescueSearchInput" placeholder="Search vegetables, farmers..." class="vm-search-input" autocomplete="off"/>
+    </div>
   </div>
 
   <div class="vm-filter-wrap">
@@ -40,7 +40,7 @@
     {% if posts %}
     <div class="vm-rescue-grid" id="rescueGrid">
       {% for post in posts %}
-      <div class="vm-post-card vm-rescue-card" data-name="{{ post.vegetable|lower }}" data-level="{{ post.surplus_level }}">
+      <div class="vm-post-card vm-rescue-card" data-name="{{ post.vegetable|lower }}" data-level="{{ post.surplus_level }}" data-farmer="{{ post.farmer_name|lower }}">
         <div class="vm-post-img">
           {% if post.veggie_photo %}
             <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
@@ -69,7 +69,7 @@
           </div>
           <div class="vm-post-timer">
             <i class="bi bi-calendar-check-fill"></i>
-            <span>Donated {{ post.donated_at|date:"M d, Y g:i A"|default:post.created_at|date:"M d, Y g:i A" }}</span>
+            <span>Donated {% if post.donated_at %}{{ post.donated_at|date:"M d, Y g:i A" }}{% else %}{{ post.created_at|date:"M d, Y g:i A" }}{% endif %}</span>
           </div>
           <div class="vm-post-actions mt-2">
             <a href="{% url 'rescue_start' post.pk %}" class="vm-rescue-btn flex-grow-1">
@@ -208,6 +208,27 @@ ass="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
 {% block extra_js %}
 <script>
 const csrf = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+// Search
+document.getElementById('rescueSearchInput').addEventListener('input', function () {
+  const q = this.value.toLowerCase().trim();
+  let visible = 0;
+
+  document.querySelectorAll('#rescueGrid .vm-post-card').forEach(card => {
+    const show = !q || card.dataset.name.includes(q) || (card.dataset.farmer || '').includes(q);
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  document.getElementById('rescueCountPill').textContent = visible;
+
+  // 🔥 FIX: control container behavior
+  if (visible <= 1) {
+    grid.style.display = 'block';   // remove grid spacing effect
+  } else {
+    grid.style.display = 'grid';
+  }
+});
 
 let rescueActiveLevel = 'ALL';
 document.querySelectorAll('.vm-filter-btn').forEach(btn => {

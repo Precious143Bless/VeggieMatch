@@ -4,17 +4,15 @@ from pathlib import Path
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
-from django.contrib import messages
 from django.http import JsonResponse
 from django.conf import settings
 from datetime import timedelta
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.core.paginator import Paginator
 
 from .models import VegetablePost, BuyRecord, RescueRecord
 from .forms  import PostVegetableForm, OTPForm, BuyForm, RescueForm, GlobalSearchForm
 from .sms    import create_otp, verify_otp, send_buy_notification, send_buy_confirmation, send_rescue_notification, send_rescue_confirmation, send_expiry_warning
-from django.db.models import Sum
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -681,11 +679,48 @@ def post_delete_verify(request, post_id):
     return JsonResponse({'ok': False})
 
 
+# ── Expiry Notify (called by client-side timer) ───────────────────────────────
+
+def notify_expiry(request, post_id):
+    """AJAX POST: send a one-time expiry warning SMS for a specific post.
+    The client timer calls this when the countdown crosses the warning threshold.
+    Guard: only sends if expiry_notified is still False, then flips it atomically."""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False})
+
+    import threading
+    from django.db import transaction
+
+    with transaction.atomic():
+        try:
+            post = VegetablePost.objects.select_for_update().get(
+                pk=post_id,
+                status=VegetablePost.STATUS_ACTIVE,
+                expiry_notified=False,
+            )
+        except VegetablePost.DoesNotExist:
+            # Already notified or post no longer active — silently ignore
+            return JsonResponse({'ok': False, 'reason': 'already_notified'})
+
+        post.expiry_notified = True
+        post.save(update_fields=['expiry_notified'])
+
+    mins_left = max(1, int((post.expiry_time - timezone.now()).total_seconds() // 60))
+    threading.Thread(
+        target=send_expiry_warning,
+        args=(post.phone_number, post.farmer_name, post.vegetable, post.quantity, mins_left),
+        daemon=True,
+    ).start()
+    return JsonResponse({'ok': True})
+
+
 # ── Global Search ──────────────────────────────────────────────────────────────
 
 def global_search(request):
     form = GlobalSearchForm(request.GET or None)
-    qs = VegetablePost.objects.all().order_by('-created_at')
+    qs = VegetablePost.objects.filter(
+        status__in=[VegetablePost.STATUS_ACTIVE, VegetablePost.STATUS_RESCUE]
+    ).order_by('-created_at')
 
     if form.is_valid():
         q = form.cleaned_data.get('q')

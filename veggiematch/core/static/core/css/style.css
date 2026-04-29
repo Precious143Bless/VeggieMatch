@@ -40,12 +40,10 @@ body {
   background: var(--bg);
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
-  /* space for bottom nav on mobile */
-  padding-bottom: 70px;
 }
 
 @media (min-width: 768px) {
-  body { padding-bottom: 70px; }
+  body { padding-bottom: 0; }
 }
 
 /* ══════════════════════════════════════════════
@@ -334,9 +332,10 @@ body {
   margin-top: 2px;
 }
 
-/* Timer */
-.vm-timer       { color: var(--orange); font-weight: 800; }
-.vm-timer.urgent { color: var(--red); }
+/* Search hide — removes card from layout flow */
+.vm-post-card.search-hidden {
+  display: none !important;
+}
 
 /* ══════════════════════════════════════════════
    BUTTONS — large touch targets
@@ -711,7 +710,7 @@ body {
 
 .vm-back-link:hover { color: var(--green); }
 
-.vm-main { min-height: 72vh; }
+.vm-main { min-height: unset; }
 
 /* ══════════════════════════════════════════════
    RESPONSIVE TWEAKS
@@ -1403,7 +1402,9 @@ body {
   margin-left: 0.5rem;
 }
 
-.vm-rescue-listings { padding: 0 1rem 1.5rem; }
+.vm-rescue-listings {
+  padding: 0 1rem 0.5rem; 
+}
 
 .vm-rescue-grid {
   display: grid;
@@ -1721,3 +1722,9 @@ body {
 }
 
 /* ── Wider cards — single column on mobile, 2 on tablet+ ── */
+
+/* ── Timer pulse for last 30 seconds ── */
+@keyframes vmTimerPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}

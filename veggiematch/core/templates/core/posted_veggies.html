@@ -18,10 +18,10 @@
 </header>
 
 <div class="vm-search-wrap">
-  <form method="get" action="{% url 'global_search' %}" class="vm-search-box">
+  <div class="vm-search-box">
     <i class="bi bi-search vm-search-icon"></i>
-    <input type="text" name="q" placeholder="Search vegetables, farmers..." class="vm-search-input" autocomplete="off"/>
-  </form>
+    <input type="text" id="searchInput" placeholder="Search vegetables, farmers..." class="vm-search-input" autocomplete="off"/>
+  </div>
 </div>
 
 <div class="vm-filter-wrap">
@@ -42,7 +42,7 @@
   {% if posts %}
   <div class="vm-grid" id="postGrid">
     {% for post in posts %}
-    <div class="vm-post-card" data-name="{{ post.vegetable|lower }}" data-level="{{ post.surplus_level }}">
+    <div class="vm-post-card" data-name="{{ post.vegetable|lower }}" data-level="{{ post.surplus_level }}" data-farmer="{{ post.farmer_name|lower }}">
       <div class="vm-post-img">
         {% if post.veggie_photo %}
           <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
@@ -75,7 +75,10 @@
         <div class="vm-post-timer">
           <i class="bi bi-calendar-check-fill"></i>
           <span>Posted {{ post.created_at|date:"M d, Y g:i A" }}</span>
-          <span class="vm-timer d-none" data-expiry="{{ post.expiry_time|date:'c' }}"></span>
+          <span class="vm-timer d-none"
+                data-expiry="{{ post.expiry_time|date:'c' }}"
+                data-post-id="{{ post.pk }}"
+                data-created="{{ post.created_at|date:'c' }}"></span>
         </div>
         <div class="vm-post-actions">
           <a href="{% url 'buy_start' post.pk %}" class="vm-claim-btn">
@@ -234,6 +237,18 @@
 {% block extra_js %}
 <script>
 const csrf = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+// Search
+document.getElementById('searchInput').addEventListener('input', function () {
+  const q = this.value.toLowerCase().trim();
+  let visible = 0;
+  document.querySelectorAll('.vm-post-card').forEach(card => {
+    const show = !q || card.dataset.name.includes(q) || card.dataset.farmer.includes(q);
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('countPill').textContent = visible;
+});
 
 // Filter
 let activeLevel = 'ALL';

@@ -109,12 +109,20 @@ def send_rescue_confirmation(claimer_phone, claimer_name, vegetable, quantity, f
 
 
 def send_expiry_warning(farmer_phone, farmer_name, vegetable, quantity, minutes_left):
-    """Warn farmer their post is about to expire so they can donate proactively."""
+    """Warn farmer their post is about to expire and will auto-move to the Donate pool."""
+    if minutes_left <= 1:
+        time_str = "less than a minute"
+    elif minutes_left < 60:
+        time_str = f"~{minutes_left} minutes"
+    else:
+        time_str = f"~{minutes_left // 60}h {minutes_left % 60}m"
+
     message = (
-        f"[VeggieMatch] Hi {farmer_name}, your post is expiring soon!\n"
+        f"[VeggieMatch] Hi {farmer_name}, your listing is expiring soon!\n"
         f"Item: {vegetable} ({quantity} kg)\n"
-        f"Expires in: ~{minutes_left} minutes\n"
-        f"Tip: Open VeggieMatch and tap Donate to let the community claim it for free instead of wasting it."
+        f"Expires in: {time_str}\n"
+        f"After expiry, your post will automatically move to the FREE Donate pool for community kitchens to claim.\n"
+        f"Open VeggieMatch to extend, edit, or manually donate now."
     )
     return _send_semaphore(farmer_phone, message)
 
