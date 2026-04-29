@@ -12,6 +12,11 @@
           <div class="vm-appbar-sub">Free for community kitchens</div>
         </div>
       </div>
+      <div class="vm-appbar-right">
+        <a href="{% url 'post_vegetable' %}?type=donate" class="vm-appbar-post-btn" style="background:linear-gradient(135deg,#a81c1c,#c62828);box-shadow:0 2px 8px rgba(168,28,28,0.35);">
+          <i class="bi bi-plus-lg"></i> Post
+        </a>
+      </div>
     </div>
   </header>
 
@@ -20,15 +25,16 @@
       <i class="bi bi-search vm-search-icon"></i>
       <input type="text" id="rescueSearchInput" placeholder="Search vegetables, farmers..." class="vm-search-input" autocomplete="off"/>
     </div>
+    <button id="rescueSortBtn" class="vm-sort-btn" title="Sort by date" data-order="desc">
+      <i class="bi bi-sort-down" id="rescueSortIcon"></i>
+    </button>
   </div>
 
-  <div class="vm-filter-wrap">
-    <div class="vm-filter-scroll">
-      <button class="vm-filter-btn active" data-level="ALL">All</button>
-      <button class="vm-filter-btn low"    data-level="LOW">🟡 Low</button>
-      <button class="vm-filter-btn medium" data-level="MEDIUM">🟠 Medium</button>
-      <button class="vm-filter-btn high"   data-level="HIGH">🔴 High</button>
-    </div>
+  <div class="vm-filter-chips">
+    <button class="vm-chip active" data-level="ALL">All</button>
+    <button class="vm-chip" data-level="LOW"><span style="width:8px;height:8px;border-radius:50%;background:#f9a825;display:inline-block;"></span> Low</button>
+    <button class="vm-chip" data-level="MEDIUM"><span style="width:8px;height:8px;border-radius:50%;background:#ef6c00;display:inline-block;"></span> Medium</button>
+    <button class="vm-chip" data-level="HIGH"><span style="width:8px;height:8px;border-radius:50%;background:#c62828;display:inline-block;"></span> High</button>
   </div>
 
   <div class="vm-rescue-listings">
@@ -40,7 +46,7 @@
     {% if posts %}
     <div class="vm-rescue-grid" id="rescueGrid">
       {% for post in posts %}
-      <div class="vm-post-card vm-rescue-card" data-name="{{ post.vegetable|lower }}" data-level="{{ post.surplus_level }}" data-farmer="{{ post.farmer_name|lower }}">
+      <div class="vm-post-card vm-rescue-card" data-name="{{ post.vegetable|lower }}" data-level="{{ post.surplus_level }}" data-farmer="{{ post.farmer_name|lower }}" data-date="{% if post.donated_at %}{{ post.donated_at|date:'U' }}{% else %}{{ post.created_at|date:'U' }}{% endif %}">
         <div class="vm-post-img">
           {% if post.veggie_photo %}
             <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
@@ -54,7 +60,8 @@
           <div class="vm-post-farmer">
             {% if post.farmer_photo %}
               <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
-                   style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #ffcdd2;">
+                   class="zoomable"
+                   style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #ffcdd2;cursor:zoom-in;">
             {% else %}
               <i class="bi bi-person-fill"></i>
             {% endif %}
@@ -213,27 +220,34 @@ const csrf = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 document.getElementById('rescueSearchInput').addEventListener('input', function () {
   const q = this.value.toLowerCase().trim();
   let visible = 0;
-
+  const grid = document.getElementById('rescueGrid');
   document.querySelectorAll('#rescueGrid .vm-post-card').forEach(card => {
     const show = !q || card.dataset.name.includes(q) || (card.dataset.farmer || '').includes(q);
     card.style.display = show ? '' : 'none';
     if (show) visible++;
   });
-
   document.getElementById('rescueCountPill').textContent = visible;
+  grid.style.display = visible <= 1 ? 'block' : 'grid';
+});
 
-  // 🔥 FIX: control container behavior
-  if (visible <= 1) {
-    grid.style.display = 'block';   // remove grid spacing effect
-  } else {
-    grid.style.display = 'grid';
-  }
+// Sort
+document.getElementById('rescueSortBtn').addEventListener('click', function () {
+  const order = this.dataset.order === 'desc' ? 'asc' : 'desc';
+  this.dataset.order = order;
+  document.getElementById('rescueSortIcon').className = order === 'desc' ? 'bi bi-sort-down' : 'bi bi-sort-up';
+  const grid = document.getElementById('rescueGrid');
+  const cards = [...grid.querySelectorAll('.vm-post-card')];
+  cards.sort((a, b) => order === 'desc'
+    ? parseInt(b.dataset.date) - parseInt(a.dataset.date)
+    : parseInt(a.dataset.date) - parseInt(b.dataset.date)
+  );
+  cards.forEach(c => grid.appendChild(c));
 });
 
 let rescueActiveLevel = 'ALL';
-document.querySelectorAll('.vm-filter-btn').forEach(btn => {
+document.querySelectorAll('.vm-chip').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.vm-filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.vm-chip').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     rescueActiveLevel = btn.dataset.level;
     let visible = 0;

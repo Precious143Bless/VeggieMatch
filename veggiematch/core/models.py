@@ -31,15 +31,17 @@ class VegetablePost(models.Model):
     surplus_level  = models.CharField(max_length=10, choices=SURPLUS_CHOICES, default=SURPLUS_LOW)
     quantity       = models.DecimalField(max_digits=8, decimal_places=2)
     price_per_kg   = models.DecimalField(max_digits=8, decimal_places=2, default=1.00)
-    pickup_address = models.CharField(max_length=255, default='La Trinidad Trading Post, Benguet')
+    pickup_address = models.CharField(max_length=255)
     pickup_note    = models.CharField(max_length=255, blank=True)
     status         = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
     created_at     = models.DateTimeField(auto_now_add=True)
     donated_at     = models.DateTimeField(null=True, blank=True)
-    expiry_time    = models.DateTimeField()
+    expiry_time    = models.DateTimeField(null=True, blank=True)  # null = no expiry (direct donations)
     expiry_notified = models.BooleanField(default=False)  # True once the 30-min warning SMS is sent
 
     def is_expired(self):
+        if self.expiry_time is None:
+            return False  # donations with no expiry never expire
         return timezone.now() >= self.expiry_time
 
     def get_full_location(self):
@@ -70,6 +72,7 @@ class BuyRecord(models.Model):
 
     class Meta:
         db_table = 'core_buyrecord'
+        unique_together = [('post', 'buyer_number')]
 
 
 class RescueRecord(models.Model):
@@ -84,6 +87,7 @@ class RescueRecord(models.Model):
 
     class Meta:
         db_table = 'core_rescuerecord'
+        unique_together = [('post', 'claimer_number')]
 
 
 class OTPVerification(models.Model):

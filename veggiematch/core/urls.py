@@ -4,7 +4,6 @@ from . import views
 urlpatterns = [
     path('',                                   views.splash,              name='splash'),
     path('home/',                              views.home,                name='home'),
-    path('category/',                          views.category,            name='category'),
     path('posted/',                            views.posted_veggies,      name='posted_veggies'),
 
     # Post vegetable

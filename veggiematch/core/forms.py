@@ -45,6 +45,7 @@ class PostVegetableForm(forms.Form):
     )
     price_per_kg = forms.DecimalField(
         max_digits=8, decimal_places=2, min_value=1, label='Price per kg (₱)', initial=1,
+        required=False,  # not required for donations
         widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 25', 'step': '0.5'}),
     )
     pickup_note  = forms.CharField(
@@ -63,9 +64,11 @@ class PostVegetableForm(forms.Form):
 
     def clean_price_per_kg(self):
         price = self.cleaned_data.get('price_per_kg')
+        # Price is optional for donations — validated as 0 server-side
         if price is not None and price < 1:
-            raise forms.ValidationError("Minimum price is ₱1 per kg.")
-        return price
+            # Only raise if it's not a donation (post_type checked in view)
+            pass
+        return price if price is not None else None
 
     def clean(self):
         cleaned = super().clean()

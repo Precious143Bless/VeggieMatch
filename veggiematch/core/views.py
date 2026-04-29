@@ -12,17 +12,33 @@ from django.core.paginator import Paginator
 
 from .models import VegetablePost, BuyRecord, RescueRecord
 from .forms  import PostVegetableForm, OTPForm, BuyForm, RescueForm, GlobalSearchForm
-from .sms    import create_otp, verify_otp, send_buy_notification, send_buy_confirmation, send_rescue_notification, send_rescue_confirmation, send_expiry_warning
+from .sms    import create_otp, verify_otp, send_buy_notification, send_buy_confirmation, send_rescue_notification, send_rescue_confirmation, send_expiry_warning, send_auto_rescue_notification
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _sync_all_posts():
-    VegetablePost.objects.filter(
+    import threading
+    # Fetch posts that need converting before the bulk update
+    expiring = list(VegetablePost.objects.filter(
         status=VegetablePost.STATUS_ACTIVE,
         expiry_time__lte=timezone.now(),
-        donated_at__isnull=True
-    ).update(status=VegetablePost.STATUS_RESCUE, donated_at=timezone.now())
+        donated_at__isnull=True,
+    ))
+    if not expiring:
+        return
+    ids = [p.pk for p in expiring]
+    VegetablePost.objects.filter(pk__in=ids).update(
+        status=VegetablePost.STATUS_RESCUE,
+        donated_at=timezone.now(),
+    )
+    # Notify each farmer their post was auto-moved to donate
+    for post in expiring:
+        threading.Thread(
+            target=send_auto_rescue_notification,
+            args=(post.phone_number, post.farmer_name, post.vegetable, post.quantity),
+            daemon=True,
+        ).start()
 
 
 def _cleanup_old_otps():
@@ -63,6 +79,48 @@ def _notify_expiring_posts():
             args=(post.phone_number, post.farmer_name, post.vegetable, post.quantity, mins_left),
             daemon=True,
         ).start()
+
+
+def _recalc_surplus(post):
+    """Update surplus_level to match the current remaining quantity."""
+    qty = float(post.quantity)
+    if qty >= 100:
+        post.surplus_level = VegetablePost.SURPLUS_HIGH
+    elif qty >= 20:
+        post.surplus_level = VegetablePost.SURPLUS_MEDIUM
+    else:
+        post.surplus_level = VegetablePost.SURPLUS_LOW
+
+
+MANAGE_UNLOCK_TTL = 15 * 60  # seconds — manage session expires after 15 minutes
+
+
+def _is_manage_unlocked(request, post_id):
+    """Return True if this post was unlocked via manage OTP within the last 15 minutes."""
+    unlocked = request.session.get('manage_unlocked', {})
+    ts = unlocked.get(str(post_id))
+    if ts is None:
+        return False
+    if timezone.now().timestamp() - ts > MANAGE_UNLOCK_TTL:
+        # Expired — clean it up
+        unlocked.pop(str(post_id), None)
+        request.session['manage_unlocked'] = unlocked
+        return False
+    return True
+
+
+def _set_manage_unlocked(request, post_id):
+    """Record that this post was unlocked, with the current timestamp."""
+    unlocked = request.session.get('manage_unlocked', {})
+    unlocked[str(post_id)] = timezone.now().timestamp()
+    request.session['manage_unlocked'] = unlocked
+
+
+def _clear_manage_unlocked(request, post_id):
+    """Remove the manage unlock for this post (e.g. after delete)."""
+    unlocked = request.session.get('manage_unlocked', {})
+    unlocked.pop(str(post_id), None)
+    request.session['manage_unlocked'] = unlocked
 
 
 def splash(request):
@@ -158,13 +216,6 @@ def home(request):
     return render(request, 'core/home.html', {'posts': posts, 'donate_posts': donate_posts, 'impact': impact})
 
 
-# ── Category ──────────────────────────────────────────────────────────────────
-
-def category(request):
-    # Redirect to home — filtering is handled client-side on the home page
-    return redirect('home')
-
-
 # ── Posted Veggies (all active with photos) ───────────────────────────────────
 
 def posted_veggies(request):
@@ -182,10 +233,17 @@ def post_vegetable(request):
         form = PostVegetableForm(request.POST)
         if form.is_valid():
             d = form.cleaned_data
+            post_type = request.POST.get('post_type', 'sell')
+            is_donation = post_type == 'donate'
             if not d.get('farmer_photo', '').startswith('data:image'):
                 return JsonResponse({'ok': False, 'errors': {'farmer_photo': 'Please capture your face photo.'}})
             if not d.get('veggie_photo', '').startswith('data:image'):
                 return JsonResponse({'ok': False, 'errors': {'veggie_photo': 'Please capture a photo of your vegetables.'}})
+            # Validate price only for sell posts
+            if not is_donation:
+                price = d.get('price_per_kg')
+                if price is None or price < 1:
+                    return JsonResponse({'ok': False, 'errors': {'price_per_kg': 'Minimum price is ₱1 per kg.'}})
             # Save photos to disk now — keep only the path in session, not the raw base64
             farmer_photo_path = _save_base64_image(d['farmer_photo'], 'faces/farmers')
             veggie_photo_path = _save_base64_image(d['veggie_photo'], 'veggies')
@@ -199,8 +257,10 @@ def post_vegetable(request):
                 'surplus_level':      d['surplus_level'],
                 'quantity':           str(d['quantity']),
                 'price_per_kg':       str(d['price_per_kg']),
+                'pickup_address':     d.get('pickup_address', 'La Trinidad Trading Post, Benguet'),
                 'pickup_note':        d.get('pickup_note', ''),
                 'timer_minutes':      form.get_timer_minutes(),
+                'post_type':          request.POST.get('post_type', 'sell'),
             }
             result = create_otp(d['phone_number'], 'POST')
             if not result['ok']:
@@ -210,7 +270,10 @@ def post_vegetable(request):
             errors = {f: e.as_text() for f, e in form.errors.items()}
             return JsonResponse({'ok': False, 'errors': errors})
     form = PostVegetableForm()
-    return render(request, 'core/post.html', {'form': form})
+    return render(request, 'core/post.html', {
+        'form': form,
+        'force_type': request.GET.get('type', ''),  # 'sell' hides donate toggle
+    })
 
 
 def post_verify(request):
@@ -223,6 +286,7 @@ def post_verify(request):
         if form.is_valid():
             if verify_otp(pending['phone_number'], form.cleaned_data['otp_code'], 'POST'):
                 minutes      = int(pending['timer_minutes'])
+                is_donation  = pending.get('post_type') == 'donate'
                 post = VegetablePost.objects.create(
                     farmer_name    = pending['farmer_name'],
                     phone_number   = pending['phone_number'],
@@ -231,14 +295,31 @@ def post_verify(request):
                     veggie_photo   = pending.get('veggie_photo_path', ''),
                     surplus_level  = pending.get('surplus_level', 'LOW'),
                     quantity       = pending['quantity'],
-                    price_per_kg   = pending['price_per_kg'],
+                    price_per_kg   = 0 if is_donation else pending['price_per_kg'],
+                    pickup_address = pending.get('pickup_address', 'La Trinidad Trading Post, Benguet'),
                     pickup_note    = pending.get('pickup_note', ''),
-                    expiry_time    = timezone.now() + timedelta(minutes=minutes),
+                    # Donations go straight to RESCUE; null expiry = no timer
+                    status         = VegetablePost.STATUS_RESCUE if is_donation else VegetablePost.STATUS_ACTIVE,
+                    donated_at     = timezone.now() if is_donation else None,
+                    expiry_time    = None if is_donation else timezone.now() + timedelta(minutes=minutes),
                 )
                 del request.session['pending_post']
+                if is_donation:
+                    return JsonResponse({
+                        'ok':          True,
+                        'is_donation': True,
+                        'message':     'Your donation is now live! Community kitchens can claim it for free.',
+                        'post_id':     post.pk,
+                        'vegetable':   post.vegetable,
+                        'quantity':    str(post.quantity),
+                        'location':    post.get_full_location(),
+                        'farmer_name': post.farmer_name,
+                        'phone':       post.phone_number,
+                    })
                 label = f"{minutes // 60} hour{'s' if minutes >= 120 else ''}" if minutes >= 60 else f"{minutes} minute{'s' if minutes > 1 else ''}"
                 return JsonResponse({
                     'ok':           True,
+                    'is_donation':  False,
                     'message':      f"Your post is now live for {label}!",
                     'post_id':      post.pk,
                     'vegetable':    post.vegetable,
@@ -328,7 +409,8 @@ def buy_verify(request):
                     if post.quantity <= 0:
                         post.quantity = 0
                         post.status   = VegetablePost.STATUS_BOUGHT
-                    post.save(update_fields=['quantity', 'status'])
+                    _recalc_surplus(post)
+                    post.save(update_fields=['quantity', 'status', 'surplus_level'])
 
                     BuyRecord.objects.create(
                         post         = post,
@@ -463,7 +545,8 @@ def rescue_verify(request):
                     if post.quantity <= 0:
                         post.quantity = 0
                         post.status   = VegetablePost.STATUS_CLAIMED
-                    post.save(update_fields=['quantity', 'status'])
+                    _recalc_surplus(post)
+                    post.save(update_fields=['quantity', 'status', 'surplus_level'])
 
                     RescueRecord.objects.create(
                         post           = post,
@@ -524,7 +607,7 @@ def donate_request(request, post_id):
     """AJAX: send OTP to farmer's number to verify they own the post, or skip if manage-unlocked."""
     post = get_object_or_404(VegetablePost, pk=post_id, status=VegetablePost.STATUS_ACTIVE)
     if request.method == 'POST':
-        if post.pk in request.session.get('manage_unlocked', []):
+        if _is_manage_unlocked(request, post.pk):
             return JsonResponse({'ok': True, 'phone': post.phone_number, 'skip_otp': True})
         result = create_otp(post.phone_number, 'DONATE', post_id=post.pk)
         if not result['ok']:
@@ -538,7 +621,7 @@ def donate_verify(request, post_id):
     post = get_object_or_404(VegetablePost, pk=post_id, status=VegetablePost.STATUS_ACTIVE)
     if request.method == 'POST':
         otp_code = request.POST.get('otp_code', '')
-        unlocked = post.pk in request.session.get('manage_unlocked', [])
+        unlocked = _is_manage_unlocked(request, post.pk)
         if unlocked or verify_otp(post.phone_number, otp_code, 'DONATE', post_id=post.pk):
             post.status = VegetablePost.STATUS_RESCUE
             post.donated_at = timezone.now()
@@ -570,11 +653,8 @@ def manage_verify(request, post_id):
     if request.method == 'POST':
         otp_code = request.POST.get('otp_code', '')
         if verify_otp(post.phone_number, otp_code, 'MANAGE', post_id=post.pk):
-            # Store unlocked post id in session — expires with session
-            unlocked = request.session.get('manage_unlocked', [])
-            if post.pk not in unlocked:
-                unlocked.append(post.pk)
-            request.session['manage_unlocked'] = unlocked
+            # Store unlocked post id in session with timestamp — expires after 15 minutes
+            _set_manage_unlocked(request, post.pk)
             return JsonResponse({'ok': True})
         return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})
     return JsonResponse({'ok': False})
@@ -588,7 +668,7 @@ def post_edit_request(request, post_id):
     if post.status in (VegetablePost.STATUS_BOUGHT, VegetablePost.STATUS_CLAIMED):
         return JsonResponse({'ok': False, 'error': 'Cannot edit a post that has already been completed.'})
     if request.method == 'POST':
-        if post.pk in request.session.get('manage_unlocked', []):
+        if _is_manage_unlocked(request, post.pk):
             return JsonResponse({'ok': True, 'phone': post.phone_number, 'skip_otp': True})
         result = create_otp(post.phone_number, 'EDIT', post_id=post.pk)
         if not result['ok']:
@@ -602,7 +682,7 @@ def post_edit_verify(request, post_id):
     post = get_object_or_404(VegetablePost, pk=post_id)
     if request.method == 'POST':
         otp_code = request.POST.get('otp_code', '')
-        unlocked = post.pk in request.session.get('manage_unlocked', [])
+        unlocked = _is_manage_unlocked(request, post.pk)
         if not unlocked and not verify_otp(post.phone_number, otp_code, 'EDIT', post_id=post.pk):
             return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})
 
@@ -652,7 +732,7 @@ def post_delete_request(request, post_id):
     if post.status in (VegetablePost.STATUS_BOUGHT, VegetablePost.STATUS_CLAIMED):
         return JsonResponse({'ok': False, 'error': 'Cannot delete a post that has already been completed.'})
     if request.method == 'POST':
-        if post.pk in request.session.get('manage_unlocked', []):
+        if _is_manage_unlocked(request, post.pk):
             return JsonResponse({'ok': True, 'phone': post.phone_number, 'skip_otp': True})
         result = create_otp(post.phone_number, 'DELETE', post_id=post.pk)
         if not result['ok']:
@@ -666,13 +746,9 @@ def post_delete_verify(request, post_id):
     post = get_object_or_404(VegetablePost, pk=post_id)
     if request.method == 'POST':
         otp_code = request.POST.get('otp_code', '')
-        unlocked = post.pk in request.session.get('manage_unlocked', [])
+        unlocked = _is_manage_unlocked(request, post.pk)
         if unlocked or verify_otp(post.phone_number, otp_code, 'DELETE', post_id=post.pk):
-            # Remove from unlocked list after delete
-            unlocked_list = request.session.get('manage_unlocked', [])
-            if post.pk in unlocked_list:
-                unlocked_list.remove(post.pk)
-                request.session['manage_unlocked'] = unlocked_list
+            _clear_manage_unlocked(request, post.pk)
             post.delete()
             return JsonResponse({'ok': True, 'message': 'Post deleted successfully.'})
         return JsonResponse({'ok': False, 'error': 'Invalid or expired OTP.'})

@@ -13,11 +13,6 @@
         <div class="vm-appbar-sub">La Trinidad Trading Post</div>
       </div>
     </div>
-    <div class="vm-appbar-right">
-      <a href="{% url 'post_vegetable' %}" class="vm-appbar-post-btn">
-        <i class="bi bi-plus-lg"></i> Post
-      </a>
-    </div>
   </div>
 </header>
 
@@ -45,7 +40,7 @@
     <div style="font-size:0.82rem;font-weight:800;color:#a81c1c;margin-top:0.3rem;">Free Donations</div>
     <div style="font-size:0.72rem;color:#555;">Help reduce food waste</div>
   </a>
-  <a href="{% url 'post_vegetable' %}" style="flex:1;background:#fff8e1;border:1.5px solid #ffe082;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
+  <a href="{% url 'post_vegetable' %}?type=sell" style="flex:1;background:#fff8e1;border:1.5px solid #ffe082;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
     <div style="font-size:1.6rem;">📦</div>
     <div style="font-size:0.82rem;font-weight:800;color:#e65100;margin-top:0.3rem;">Post Surplus</div>
     <div style="font-size:0.72rem;color:#555;">Sell or donate yours</div>
@@ -98,7 +93,8 @@
         <div class="vm-post-farmer">
           {% if post.farmer_photo %}
             <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
-                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #a3d9b1;">
+                 class="zoomable"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #a3d9b1;cursor:zoom-in;">
           {% else %}
             <i class="bi bi-person-fill"></i>
           {% endif %}
@@ -132,7 +128,7 @@
     <div class="vm-empty-emoji">🥦</div>
     <h4>No listings right now</h4>
     <p>Be the first to post surplus vegetables today.</p>
-    <a href="{% url 'post_vegetable' %}" class="vm-btn-green">
+    <a href="{% url 'post_vegetable' %}?type=sell" class="vm-btn-green">
       <i class="bi bi-plus-circle me-1"></i> Post Vegetables
     </a>
   </div>
@@ -163,7 +159,8 @@
         <div class="vm-post-farmer">
           {% if post.farmer_photo %}
             <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
-                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #ffcdd2;">
+                 class="zoomable"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #ffcdd2;cursor:zoom-in;">
           {% else %}
             <i class="bi bi-person-fill"></i>
           {% endif %}

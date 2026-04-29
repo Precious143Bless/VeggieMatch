@@ -801,9 +801,14 @@ body {
 
 /* Search */
 .vm-search-wrap {
-  padding: 0.75rem 1rem 0;
-  max-width: 600px;
-  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem 0.3rem;
+}
+.vm-search-wrap .vm-search-box {
+  flex: 1;
+  min-width: 0;
 }
 
 .vm-search-box {
@@ -1727,4 +1732,97 @@ body {
 @keyframes vmTimerPulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }
+}
+
+
+/* ── Sort button beside search bar ── */
+.vm-sort-btn {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1.5px solid #a5d6a7;
+  background: #f0faf2;
+  color: #1a6b2f;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.vm-sort-btn:hover {
+  background: #d4edda;
+  border-color: #1a6b2f;
+}
+
+/* ── Filter chips row below search ── */
+.vm-filter-chips {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 1rem 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: #fff;
+}
+.vm-filter-chips::-webkit-scrollbar { display: none; }
+
+.vm-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: none;
+  background: #f1f5f1;
+  color: #444;
+  border-radius: 50px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.38rem 1rem;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.vm-chip:hover {
+  background: #d4edda;
+  color: #1a6b2f;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(26,107,47,0.15);
+}
+.vm-chip.active {
+  background: linear-gradient(135deg, #1a6b2f, #2d9e4f);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(26,107,47,0.35);
+  transform: translateY(-1px);
+}
+/* per-chip accent colours when inactive */
+.vm-chip[data-level="LOW"]    { --chip-dot: #f9a825; }
+.vm-chip[data-level="MEDIUM"] { --chip-dot: #ef6c00; }
+.vm-chip[data-level="HIGH"]   { --chip-dot: #c62828; }
+
+/* ── Post type toggle (Sell / Donate) ── */
+.vm-post-type-btn {
+  flex: 1;
+  padding: 0.6rem 0.5rem;
+  border-radius: 12px;
+  border: 2px solid #c8e6c9;
+  background: #f0faf2;
+  color: #555;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.vm-post-type-btn.active {
+  background: linear-gradient(135deg, #1a6b2f, #2d9e4f);
+  border-color: #1a6b2f;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(26,107,47,0.3);
+}
+.vm-post-type-btn.donate.active {
+  background: linear-gradient(135deg, #a81c1c, #c62828);
+  border-color: #a81c1c;
+  box-shadow: 0 3px 10px rgba(168,28,28,0.3);
 }

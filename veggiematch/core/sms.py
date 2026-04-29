@@ -1,5 +1,4 @@
-import random
-import string
+import secrets
 import requests
 from datetime import timedelta
 from django.utils import timezone
@@ -7,7 +6,8 @@ from django.conf import settings
 
 
 def generate_otp():
-    return ''.join(random.choices(string.digits, k=6))
+    # secrets.randbelow is cryptographically secure unlike random
+    return f"{secrets.randbelow(1000000):06d}"
 
 
 def _send_semaphore(phone_number, message):
@@ -48,8 +48,9 @@ def send_otp(phone_number, otp_code, purpose):
         'DONATE': f"[VeggieMatch] Your OTP to move your post to Donate: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
         'EDIT':   f"[VeggieMatch] Your OTP to edit your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
         'DELETE': f"[VeggieMatch] Your OTP to delete your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
+        'MANAGE': f"[VeggieMatch] Your OTP to manage your post: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins.",
     }
-    return _send_semaphore(phone_number, message_map.get(purpose, f"[VeggieMatch] Your OTP: {otp_code}"))
+    return _send_semaphore(phone_number, message_map.get(purpose, f"[VeggieMatch] Your OTP: {otp_code}. Valid for {settings.OTP_EXPIRY_MINUTES} mins."))
 
 
 def send_buy_notification(farmer_phone, buyer_name, buyer_phone, vegetable, quantity, price_per_kg, location, buyer_photo_url=''):
@@ -106,6 +107,17 @@ def send_rescue_confirmation(claimer_phone, claimer_name, vegetable, quantity, f
         f"Thank you for helping reduce food waste!"
     )
     return _send_semaphore(claimer_phone, message)
+
+
+def send_auto_rescue_notification(farmer_phone, farmer_name, vegetable, quantity):
+    """Notify farmer their listing has expired and been moved to the free Donate pool."""
+    message = (
+        f"[VeggieMatch] Hi {farmer_name}, your listing has expired.\n"
+        f"Item: {vegetable} ({quantity} kg)\n"
+        f"It has been automatically moved to the FREE Donate pool.\n"
+        f"Community kitchens can now claim it for free. Thank you for reducing food waste!"
+    )
+    return _send_semaphore(farmer_phone, message)
 
 
 def send_expiry_warning(farmer_phone, farmer_name, vegetable, quantity, minutes_left):

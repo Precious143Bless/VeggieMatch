@@ -15,10 +15,20 @@
 </header>
 
 <div class="vm-search-wrap">
-  <form method="get" action="{% url 'global_search' %}" class="vm-search-box">
+  <form method="get" action="{% url 'global_search' %}" class="vm-search-box" style="flex:1;">
     <i class="bi bi-search vm-search-icon"></i>
     <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search vegetables, farmers..." class="vm-search-input" autocomplete="off" autofocus/>
   </form>
+</div>
+
+<div class="vm-filter-chips">
+  <a href="?q={{ request.GET.q }}" class="vm-chip {% if not request.GET.status %}active{% endif %}">All</a>
+  <a href="?q={{ request.GET.q }}&status=ACTIVE" class="vm-chip {% if request.GET.status == 'ACTIVE' %}active{% endif %}">
+    <span style="width:8px;height:8px;border-radius:50%;background:#2e7d32;display:inline-block;"></span> For Sale
+  </a>
+  <a href="?q={{ request.GET.q }}&status=RESCUE" class="vm-chip {% if request.GET.status == 'RESCUE' %}active{% endif %}">
+    <span style="width:8px;height:8px;border-radius:50%;background:#a81c1c;display:inline-block;"></span> Donate
+  </a>
 </div>
 
 <div class="vm-listings-wrap">
@@ -52,7 +62,8 @@
         <div class="vm-post-farmer">
           {% if post.farmer_photo %}
             <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
-                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #a3d9b1;">
+                 class="zoomable"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #a3d9b1;cursor:zoom-in;">
           {% else %}
             <i class="bi bi-person-fill"></i>
           {% endif %}
