@@ -188,6 +188,9 @@
     <div class="vm-empty-emoji">🍲</div>
     <h4>No donations yet</h4>
     <p>Unclaimed vegetables will appear here.</p>
+    <a href="{% url 'post_vegetable' %}?type=donate" class="vm-btn-red">
+      <i class="bi bi-heart-fill me-1"></i> Post a Donation
+    </a>
   </div>
   {% endif %}
 </div>
