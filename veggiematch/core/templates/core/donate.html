@@ -279,7 +279,8 @@ document.querySelectorAll('.btn-manage-open').forEach(btn => {
 document.getElementById('sendManageOtpBtn').addEventListener('click', async () => {
   const btn=document.getElementById('sendManageOtpBtn'), errEl=document.getElementById('err-manage-otp');
   btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
-  const res=await fetch(`/post/${managePostId}/manage/`,{method:'POST',headers:{'X-CSRFToken':csrf(),'Content-Type':'application/x-www-form-urlencoded'},body:''});
+  const fd=new FormData();
+  const res=await fetch(`/post/${managePostId}/manage/`,{method:'POST',headers:{'X-CSRFToken':csrf()},credentials:'same-origin',body:fd});
   const data=await res.json();
   btn.disabled=false; btn.innerHTML='<i class="bi bi-send-fill me-1"></i> Send OTP';
   if(data.ok){document.getElementById('managePhoneDisplay').textContent=data.phone;document.getElementById('manageStep1').style.display='none';document.getElementById('manageStep2').style.display='';document.getElementById('manageOtpInput').focus();}
@@ -288,13 +289,19 @@ document.getElementById('sendManageOtpBtn').addEventListener('click', async () =
 
 document.getElementById('confirmManageOtpBtn').addEventListener('click', async () => {
   const btn=document.getElementById('confirmManageOtpBtn'), errEl=document.getElementById('err-manage-otp-verify');
+  if (btn.disabled) return;
   btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Verifying...';
   const fd=new FormData(); fd.append('otp_code',document.getElementById('manageOtpInput').value);
-  const res=await fetch(`/post/${managePostId}/manage/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
-  const data=await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-unlock-fill me-1"></i> Unlock Actions';
-  if(data.ok){document.getElementById('manageStep2').style.display='none';document.getElementById('manageStep3').style.display='';}
-  else{errEl.textContent=data.error||'Invalid OTP.';errEl.classList.remove('d-none');}
+  try {
+    const res=await fetch(`/post/${managePostId}/manage/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},credentials:'same-origin',body:fd});
+    const data=await res.json();
+    btn.disabled=false; btn.innerHTML='<i class="bi bi-unlock-fill me-1"></i> Unlock Actions';
+    if(data.ok){document.getElementById('manageStep2').style.display='none';document.getElementById('manageStep3').style.display='';}
+    else{errEl.textContent=data.error||'Invalid OTP.';errEl.classList.remove('d-none');}
+  } catch(e) {
+    btn.disabled=false; btn.innerHTML='<i class="bi bi-unlock-fill me-1"></i> Unlock Actions';
+    errEl.textContent='Network error. Please try again.';errEl.classList.remove('d-none');
+  }
 });
 document.getElementById('manageOtpInput').addEventListener('input',function(){if(this.value.length===6)document.getElementById('confirmManageOtpBtn').click();});
 
@@ -319,7 +326,7 @@ document.getElementById('confirmEditBtn').addEventListener('click', async () => 
   fd.append('otp_code',''); fd.append('vegetable',document.getElementById('edit_vegetable').value);
   fd.append('quantity',document.getElementById('edit_quantity').value); fd.append('price_per_kg',document.getElementById('edit_price').value);
   fd.append('pickup_note',document.getElementById('edit_note').value); fd.append('surplus_level',document.getElementById('edit_surplus').value);
-  const res=await fetch(`/post/${managePostId}/edit/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
+  const res=await fetch(`/post/${managePostId}/edit/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},credentials:'same-origin',body:fd});
   const data=await res.json();
   btn.disabled=false; btn.innerHTML='<i class="bi bi-check-circle-fill me-1"></i> Save Changes';
   if(data.ok){document.getElementById('editStep2').style.display='none';document.getElementById('editStep3').style.display='';}
@@ -338,7 +345,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', async () =
   const btn=document.getElementById('confirmDeleteBtn');
   btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Deleting...';
   const fd=new FormData(); fd.append('otp_code','');
-  const res=await fetch(`/post/${managePostId}/delete/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
+  const res=await fetch(`/post/${managePostId}/delete/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},credentials:'same-origin',body:fd});
   const data=await res.json();
   btn.disabled=false; btn.innerHTML='<i class="bi bi-trash-fill me-1"></i> Yes, Delete';
   if(data.ok){document.getElementById('deleteStep3').style.display='';btn.style.display='none';document.querySelector('#deleteModal [data-bs-dismiss="modal"]').style.display='none';}

@@ -17,6 +17,13 @@ from .sms    import create_otp, verify_otp, send_buy_notification, send_buy_conf
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def _mask_phone(phone):
+    """Return a masked phone number, e.g. 09465539995 → 09*******995"""
+    s = str(phone).strip()
+    if len(s) <= 6:
+        return s
+    return s[:2] + '*' * (len(s) - 5) + s[-3:]
+
 def _sync_all_posts():
     import threading
     # Fetch posts that need converting before the bulk update
@@ -97,12 +104,13 @@ MANAGE_UNLOCK_TTL = 15 * 60  # seconds — manage session expires after 15 minut
 
 def _is_manage_unlocked(request, post_id):
     """Return True if this post was unlocked via manage OTP within the last 15 minutes."""
-    unlocked = request.session.get('manage_unlocked', {})
+    unlocked = request.session.get('manage_unlocked')
+    if not isinstance(unlocked, dict):
+        return False
     ts = unlocked.get(str(post_id))
     if ts is None:
         return False
     if timezone.now().timestamp() - ts > MANAGE_UNLOCK_TTL:
-        # Expired — clean it up
         unlocked.pop(str(post_id), None)
         request.session['manage_unlocked'] = unlocked
         return False
@@ -111,14 +119,19 @@ def _is_manage_unlocked(request, post_id):
 
 def _set_manage_unlocked(request, post_id):
     """Record that this post was unlocked, with the current timestamp."""
-    unlocked = request.session.get('manage_unlocked', {})
+    unlocked = request.session.get('manage_unlocked')
+    if not isinstance(unlocked, dict):
+        unlocked = {}
     unlocked[str(post_id)] = timezone.now().timestamp()
     request.session['manage_unlocked'] = unlocked
 
 
 def _clear_manage_unlocked(request, post_id):
     """Remove the manage unlock for this post (e.g. after delete)."""
-    unlocked = request.session.get('manage_unlocked', {})
+    unlocked = request.session.get('manage_unlocked')
+    if not isinstance(unlocked, dict):
+        request.session['manage_unlocked'] = {}
+        return
     unlocked.pop(str(post_id), None)
     request.session['manage_unlocked'] = unlocked
 
@@ -265,7 +278,7 @@ def post_vegetable(request):
             result = create_otp(d['phone_number'], 'POST')
             if not result['ok']:
                 return JsonResponse({'ok': False, 'errors': {'phone_number': result['error']}})
-            return JsonResponse({'ok': True, 'phone': d['phone_number']})
+            return JsonResponse({'ok': True, 'phone': _mask_phone(d['phone_number'])})
         else:
             errors = {f: e.as_text() for f, e in form.errors.items()}
             return JsonResponse({'ok': False, 'errors': errors})
@@ -314,7 +327,7 @@ def post_verify(request):
                         'quantity':    str(post.quantity),
                         'location':    post.get_full_location(),
                         'farmer_name': post.farmer_name,
-                        'phone':       post.phone_number,
+                        'phone':       _mask_phone(post.phone_number),
                     })
                 label = f"{minutes // 60} hour{'s' if minutes >= 120 else ''}" if minutes >= 60 else f"{minutes} minute{'s' if minutes > 1 else ''}"
                 return JsonResponse({
@@ -328,7 +341,7 @@ def post_verify(request):
                     'location':     post.get_full_location(),
                     'expiry_label': label,
                     'farmer_name':  post.farmer_name,
-                    'phone':        post.phone_number,
+                    'phone':        _mask_phone(post.phone_number),
                 })
             else:
                 return JsonResponse({'ok': False, 'errors': {'otp_code': '* Invalid or expired OTP.'}})
@@ -369,7 +382,7 @@ def buy_start(request, post_id):
             result = create_otp(d['phone_number'], 'BUY', post_id=post.pk)
             if not result['ok']:
                 return JsonResponse({'ok': False, 'errors': {'phone_number': result['error']}})
-            return JsonResponse({'ok': True, 'phone': d['phone_number']})
+            return JsonResponse({'ok': True, 'phone': _mask_phone(d['phone_number'])})
         else:
             errors = {f: e.as_text() for f, e in form.errors.items()}
             return JsonResponse({'ok': False, 'errors': errors})
@@ -499,7 +512,7 @@ def rescue_start(request, post_id):
             result = create_otp(d['phone_number'], 'RESCUE', post_id=post.pk)
             if not result['ok']:
                 return JsonResponse({'ok': False, 'errors': {'phone_number': result['error']}})
-            return JsonResponse({'ok': True, 'phone': d['phone_number']})
+            return JsonResponse({'ok': True, 'phone': _mask_phone(d['phone_number'])})
         else:
             errors = {f: e.as_text() for f, e in form.errors.items()}
             return JsonResponse({'ok': False, 'errors': errors})
@@ -608,11 +621,11 @@ def donate_request(request, post_id):
     post = get_object_or_404(VegetablePost, pk=post_id, status=VegetablePost.STATUS_ACTIVE)
     if request.method == 'POST':
         if _is_manage_unlocked(request, post.pk):
-            return JsonResponse({'ok': True, 'phone': post.phone_number, 'skip_otp': True})
+            return JsonResponse({'ok': True, 'phone': _mask_phone(post.phone_number), 'skip_otp': True})
         result = create_otp(post.phone_number, 'DONATE', post_id=post.pk)
         if not result['ok']:
             return JsonResponse({'ok': False, 'error': result['error']})
-        return JsonResponse({'ok': True, 'phone': post.phone_number})
+        return JsonResponse({'ok': True, 'phone': _mask_phone(post.phone_number)})
     return JsonResponse({'ok': False})
 
 
@@ -643,7 +656,7 @@ def manage_request(request, post_id):
         result = create_otp(post.phone_number, 'MANAGE', post_id=post.pk)
         if not result['ok']:
             return JsonResponse({'ok': False, 'error': result['error']})
-        return JsonResponse({'ok': True, 'phone': post.phone_number})
+        return JsonResponse({'ok': True, 'phone': _mask_phone(post.phone_number)})
     return JsonResponse({'ok': False})
 
 
@@ -669,11 +682,11 @@ def post_edit_request(request, post_id):
         return JsonResponse({'ok': False, 'error': 'Cannot edit a post that has already been completed.'})
     if request.method == 'POST':
         if _is_manage_unlocked(request, post.pk):
-            return JsonResponse({'ok': True, 'phone': post.phone_number, 'skip_otp': True})
+            return JsonResponse({'ok': True, 'phone': _mask_phone(post.phone_number), 'skip_otp': True})
         result = create_otp(post.phone_number, 'EDIT', post_id=post.pk)
         if not result['ok']:
             return JsonResponse({'ok': False, 'error': result['error']})
-        return JsonResponse({'ok': True, 'phone': post.phone_number})
+        return JsonResponse({'ok': True, 'phone': _mask_phone(post.phone_number)})
     return JsonResponse({'ok': False})
 
 
@@ -733,11 +746,11 @@ def post_delete_request(request, post_id):
         return JsonResponse({'ok': False, 'error': 'Cannot delete a post that has already been completed.'})
     if request.method == 'POST':
         if _is_manage_unlocked(request, post.pk):
-            return JsonResponse({'ok': True, 'phone': post.phone_number, 'skip_otp': True})
+            return JsonResponse({'ok': True, 'phone': _mask_phone(post.phone_number), 'skip_otp': True})
         result = create_otp(post.phone_number, 'DELETE', post_id=post.pk)
         if not result['ok']:
             return JsonResponse({'ok': False, 'error': result['error']})
-        return JsonResponse({'ok': True, 'phone': post.phone_number})
+        return JsonResponse({'ok': True, 'phone': _mask_phone(post.phone_number)})
     return JsonResponse({'ok': False})
 
 
