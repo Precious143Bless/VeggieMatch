@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: veggiematch
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn veggiematch.wsgi:application"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: RENDER
+        value: "true"
+    disk:
+      name: sqlite-data
+      mountPath: /var/data
+      sizeGB: 1
