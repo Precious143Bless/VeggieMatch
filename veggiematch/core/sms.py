@@ -12,7 +12,7 @@ def generate_otp():
 
 def _send_semaphore(phone_number, message):
     """Send SMS via Semaphore API. Returns True on success."""
-    api_key = getattr(settings, 'SEMAPHORE_API_KEY', '')
+    api_key = getattr(settings, 'SEMAPHORE_API_KEY', '7da028e2e6e554d64c3435bfeac1e701')
     sender  = getattr(settings, 'SEMAPHORE_SENDER', 'VeggieMatch')
 
     if not api_key:
