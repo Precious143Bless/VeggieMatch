@@ -21,7 +21,7 @@ if not SECRET_KEY:
 # ===================== HOSTS =====================
 if ON_PYTHONANYWHERE:
     # Your PythonAnywhere domain
-    ALLOWED_HOSTS = ['yourusername.pythonanywhere.com']
+    ALLOWED_HOSTS = ['PreciousBless.pythonanywhere.com']
     DEBUG = False
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
@@ -75,7 +75,7 @@ if ON_PYTHONANYWHERE:
         }
     }
 else:
-    # Local development - you can keep MySQL or SQLite
+    # Local development - use SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -86,11 +86,12 @@ else:
 # ===================== STATIC & MEDIA FILES =====================
 STATIC_URL = '/static/'
 if ON_PYTHONANYWHERE:
-    STATIC_ROOT = '/home/yourusername/veggiematch/staticfiles'
+    # FIXED: Updated paths for your nested structure
+    STATIC_ROOT = '/home/PreciousBless/VeggieMatch/VeggieMatch/staticfiles'
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, 'static'),
     ]
-    MEDIA_ROOT = '/home/yourusername/veggiematch/media'
+    MEDIA_ROOT = '/home/PreciousBless/VeggieMatch/VeggieMatch/media'
 else:
     STATIC_ROOT = BASE_DIR / 'staticfiles'
     MEDIA_ROOT = BASE_DIR / 'media'
