@@ -7,7 +7,7 @@
   <!-- Header with back button -->
   <div class="vm-post-header">
     <a href="{% url 'rescue_list' %}" class="vm-back-arrow"><i class="bi bi-arrow-left"></i></a>
-    <div class="vm-post-header-title">Claim Rescue Item</div>
+    <div class="vm-post-header-title">Claim Donate Item</div>
     <div style="width:36px;"></div>
   </div>
 
@@ -96,7 +96,7 @@
               <i class="bi bi-arrow-counterclockwise"></i> Retake
             </button>
           </div>
-          <div class="vm-err d-none mt-1" id="err-rescuer_photo"></div>
+          <div class="vm-err d-none mt-1" id="err-claimer_photo"></div>
         </div>
       </div>
 
@@ -135,10 +135,40 @@
   <div id="stepSuccess" class="vm-post-step-content" style="display:none;">
     <div class="vm-success-card" style="border-top: 4px solid var(--red);">
       <div class="vm-success-icon">🎉</div>
-      <h3>Rescue Confirmed!</h3>
-      <p id="rescueSuccessMsg" class="text-muted"></p>
-      <a href="{% url 'rescue_list' %}" class="vm-btn-red mt-3">
-        <i class="bi bi-heart-fill me-2"></i>Back to Rescue
+      <h3>Claim Confirmed!</h3>
+      <p id="rescueSuccessMsg" class="text-muted mb-3"></p>
+
+      <!-- Claim receipt -->
+      <div id="claimReceipt" style="background:#fff5f5;border:1.5px solid #ffcdd2;border-radius:14px;padding:1.1rem;text-align:left;width:100%;margin-bottom:1rem;">
+        <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:0.5rem;">Claim Receipt</div>
+        <div style="font-weight:700;font-size:1.1rem;margin-bottom:0.6rem;" id="cl-rcpt-vegetable"></div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+          <span style="font-size:0.9rem;"><i class="bi bi-box-seam-fill me-1" style="color:var(--red);"></i><span id="cl-rcpt-quantity"></span> kg</span>
+          <span style="font-size:0.9rem;font-weight:700;color:var(--red);"><i class="bi bi-gift-fill me-1"></i>FREE</span>
+        </div>
+        <div style="font-size:0.88rem;color:#555;margin-bottom:0.4rem;"><i class="bi bi-geo-alt-fill me-1" style="color:var(--red);"></i><span id="cl-rcpt-location"></span></div>
+        <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed #ffcdd2;">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.3rem;color:#444;">Farmer Contact</div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
+            <img id="cl-rcpt-farmer-photo" src="" alt="" class="zoomable" style="display:none;width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #ffcdd2;cursor:zoom-in;">
+            <div>
+              <div style="font-size:0.9rem;" id="cl-rcpt-farmer-name"></div>
+              <div style="font-size:0.9rem;margin-top:0.2rem;" id="cl-rcpt-farmer-phone"></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed #ffcdd2;">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.3rem;color:#444;">Your Photo on Record</div>
+          <img id="cl-rcpt-claimer-photo" src="" alt="Your photo" class="zoomable" style="display:none;width:56px;height:56px;border-radius:10px;object-fit:cover;border:2px solid #ffcdd2;cursor:zoom-in;">
+        </div>
+        <div style="margin-top:0.7rem;padding-top:0.6rem;border-top:1px dashed #ffcdd2;font-size:0.78rem;color:#888;">
+          Ref: <span id="cl-rcpt-ref" style="font-family:monospace;"></span>
+        </div>
+      </div>
+
+      <p class="text-muted small mb-3">Screenshot this receipt to show the farmer at pickup.</p>
+      <a href="{% url 'rescue_list' %}" class="vm-btn-red w-100">
+        <i class="bi bi-heart-fill me-2"></i>Back to Donate Items
       </a>
     </div>
   </div>
@@ -159,7 +189,7 @@ const MAX_QTY = {{ post.quantity }};
   const canvas     = document.getElementById('rescuerCanvas');
   const captureBtn = document.getElementById('rescuerCaptureBtn');
   const preview    = document.getElementById('rescuerPreview');
-  const hidden     = document.getElementById('id_rescuer_photo');
+  const hidden     = document.getElementById('id_claimer_photo');
   const retakeBtn  = document.getElementById('rescuerRetakeBtn');
   let stream = null;
 
@@ -167,16 +197,21 @@ const MAX_QTY = {{ post.quantity }};
     overlay.style.display = 'none';
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-      video.srcObject = stream;
-      video.style.display      = 'block';
-      captureBtn.style.display = 'inline-flex';
-      retakeBtn.style.display  = 'none';
-      preview.style.display    = 'none';
-      hidden.value = '';
     } catch {
-      overlay.style.display = 'flex';
-      overlay.innerHTML = '<i class="bi bi-camera-video-off-fill"></i><span>Camera denied</span>';
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch {
+        overlay.style.display = 'flex';
+        overlay.innerHTML = '<i class="bi bi-camera-video-off-fill"></i><span>Camera denied</span>';
+        return;
+      }
     }
+    video.srcObject = stream;
+    video.style.display      = 'block';
+    captureBtn.style.display = 'inline-flex';
+    retakeBtn.style.display  = 'none';
+    preview.style.display    = 'none';
+    hidden.value = '';
   }
 
   overlay.addEventListener('click', startCam);
@@ -192,7 +227,7 @@ const MAX_QTY = {{ post.quantity }};
     captureBtn.style.display = 'none';
     retakeBtn.style.display  = 'inline-flex';
     if (stream) stream.getTracks().forEach(t => t.stop());
-    const errEl = document.getElementById('err-rescuer_photo');
+    const errEl = document.getElementById('err-claimer_photo');
     if (errEl) { errEl.textContent = ''; errEl.classList.add('d-none'); }
   });
 
@@ -216,8 +251,8 @@ function setStep(n) {
 document.getElementById('rescueForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn   = document.getElementById('rescueSubmitBtn');
-  const photo = document.getElementById('id_rescuer_photo').value;
-  const errPhoto = document.getElementById('err-rescuer_photo');
+  const photo = document.getElementById('id_claimer_photo').value;
+  const errPhoto = document.getElementById('err-claimer_photo');
 
   if (!photo || !photo.startsWith('data:image')) {
     errPhoto.textContent = 'Please capture your face photo.';
@@ -280,7 +315,21 @@ document.getElementById('rescueOtpForm').addEventListener('submit', async (e) =>
   btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Confirm Rescue';
 
   if (data.ok) {
-    document.getElementById('rescueSuccessMsg').textContent = data.message;
+    document.getElementById('rescueSuccessMsg').textContent = data.message || 'Claim confirmed!';
+    document.getElementById('cl-rcpt-vegetable').textContent   = data.vegetable    || '';
+    document.getElementById('cl-rcpt-quantity').textContent    = data.quantity     || '';
+    document.getElementById('cl-rcpt-location').textContent    = data.location     || '';
+    document.getElementById('cl-rcpt-farmer-name').innerHTML   = data.farmer_name  ? `<i class="bi bi-person-fill me-1" style="color:var(--red);"></i>${data.farmer_name}` : '';
+    document.getElementById('cl-rcpt-farmer-phone').innerHTML  = data.farmer_phone ? `<i class="bi bi-telephone-fill me-1" style="color:var(--red);"></i><a href="tel:${data.farmer_phone}" style="color:var(--red);font-weight:600;">${data.farmer_phone}</a>` : '';
+    document.getElementById('cl-rcpt-ref').textContent         = data.ref          || '';
+    if (data.farmer_photo_url) {
+      const fp = document.getElementById('cl-rcpt-farmer-photo');
+      fp.src = data.farmer_photo_url; fp.style.display = '';
+    }
+    if (data.claimer_photo_url) {
+      const cp = document.getElementById('cl-rcpt-claimer-photo');
+      cp.src = data.claimer_photo_url; cp.style.display = '';
+    }
     setStep(3);
   } else {
     const errEl = document.getElementById('err-rescue-otp');

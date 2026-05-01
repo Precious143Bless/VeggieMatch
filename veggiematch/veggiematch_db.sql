@@ -42,9 +42,11 @@ CREATE TABLE IF NOT EXISTS `core_vegetablepost` (
   `price_per_kg`    decimal(8,2)  NOT NULL DEFAULT '1.00',
   `pickup_address`  varchar(255)  NOT NULL DEFAULT 'La Trinidad Trading Post, Benguet',
   `pickup_note`     varchar(255)  NOT NULL DEFAULT '',
+  -- status: ACTIVE | BOUGHT (paid) | CLAIMED (donated, fully taken) | RESCUE (available to donate)
   `status`          varchar(10)   NOT NULL DEFAULT 'ACTIVE',
   `created_at`      datetime(6)   NOT NULL,
   `expiry_time`     datetime(6)   NOT NULL,
+  `expiry_notified` tinyint(1)    NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `idx_post_status`  (`status`),
   KEY `idx_post_expiry`  (`expiry_time`)
@@ -65,6 +67,7 @@ CREATE TABLE IF NOT EXISTS `core_buyrecord` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── core_rescuerecord ─────────────────────────────────────────
+-- Multiple claimers can take partial quantities from one donated post
 CREATE TABLE IF NOT EXISTS `core_rescuerecord` (
   `id`              bigint        NOT NULL AUTO_INCREMENT,
   `post_id`         bigint        NOT NULL,
@@ -74,12 +77,12 @@ CREATE TABLE IF NOT EXISTS `core_rescuerecord` (
   `quantity_kg`     decimal(8,2)  NOT NULL DEFAULT '0.00',
   `claimed_at`      datetime(6)   NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_rescue_post` (`post_id`),
+  KEY `idx_rescue_post` (`post_id`),
   CONSTRAINT `fk_rescue_post` FOREIGN KEY (`post_id`) REFERENCES `core_vegetablepost` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── core_otpverification ──────────────────────────────────────
--- purpose: POST | BUY | RESCUE | DONATE | EDIT | DELETE
+-- purpose: POST | BUY | RESCUE | DONATE | EDIT | DELETE | DASHBOARD
 CREATE TABLE IF NOT EXISTS `core_otpverification` (
   `id`           bigint      NOT NULL AUTO_INCREMENT,
   `phone_number` varchar(20) NOT NULL,

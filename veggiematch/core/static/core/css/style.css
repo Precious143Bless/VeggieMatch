@@ -40,8 +40,6 @@ body {
   background: var(--bg);
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
-  /* space for bottom nav on mobile */
-  padding-bottom: 70px;
 }
 
 @media (min-width: 768px) {
@@ -86,7 +84,7 @@ body {
    BOTTOM NAV — mobile only
 ══════════════════════════════════════════════ */
 .vm-bottom-nav {
-  display: none;
+  display: flex;
   position: fixed;
   bottom: 0; left: 0; right: 0;
   background: var(--white);
@@ -126,7 +124,6 @@ body {
 .vm-bottom-nav .vm-bnav-post i { font-size: 1.3rem; }
 
 @media (max-width: 767px) {
-  .vm-bottom-nav { display: flex; }
   /* hide desktop navbar links on mobile, keep logo */
   .vm-navbar .navbar-collapse { display: none !important; }
 }
@@ -335,9 +332,10 @@ body {
   margin-top: 2px;
 }
 
-/* Timer */
-.vm-timer       { color: var(--orange); font-weight: 800; }
-.vm-timer.urgent { color: var(--red); }
+/* Search hide — removes card from layout flow */
+.vm-post-card.search-hidden {
+  display: none !important;
+}
 
 /* ══════════════════════════════════════════════
    BUTTONS — large touch targets
@@ -712,7 +710,7 @@ body {
 
 .vm-back-link:hover { color: var(--green); }
 
-.vm-main { min-height: 72vh; }
+.vm-main { min-height: unset; }
 
 /* ══════════════════════════════════════════════
    RESPONSIVE TWEAKS
@@ -803,9 +801,14 @@ body {
 
 /* Search */
 .vm-search-wrap {
-  padding: 0.75rem 1rem 0;
-  max-width: 600px;
-  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem 0.3rem;
+}
+.vm-search-wrap .vm-search-box {
+  flex: 1;
+  min-width: 0;
 }
 
 .vm-search-box {
@@ -960,12 +963,9 @@ body {
 /* Post cards grid */
 .vm-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
 }
-
-@media (min-width: 480px) { .vm-grid { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 700px) { .vm-grid { grid-template-columns: 1fr 1fr 1fr; } }
 
 .vm-post-card {
   background: var(--white);
@@ -1081,6 +1081,7 @@ body {
   display: flex;
   gap: 0.4rem;
   margin-top: auto;
+  flex-wrap: wrap;
 }
 
 .vm-claim-btn {
@@ -1406,7 +1407,15 @@ body {
   margin-left: 0.5rem;
 }
 
-.vm-rescue-listings { padding: 0 1rem 1.5rem; }
+.vm-rescue-listings {
+  padding: 0 1rem 0.5rem; 
+}
+
+.vm-rescue-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
 
 /* Rescue card variant */
 .vm-rescue-card .vm-post-img { background: #fff5f5; }
@@ -1690,17 +1699,130 @@ body {
 }
 .vm-delete-btn:hover { background: #fdecea; }
 
+/* ── Manage button ── */
+.vm-manage-btn {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.5rem 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  min-height: 38px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.vm-manage-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
 /* ── Wider cards — single column on mobile, 2 on tablet+ ── */
-.vm-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+
+/* ── Timer pulse for last 30 seconds ── */
+@keyframes vmTimerPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
 }
 
-@media (min-width: 480px) {
-  .vm-grid { grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+
+/* ── Sort button beside search bar ── */
+.vm-sort-btn {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1.5px solid #a5d6a7;
+  background: #f0faf2;
+  color: #1a6b2f;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.vm-sort-btn:hover {
+  background: #d4edda;
+  border-color: #1a6b2f;
 }
 
-@media (min-width: 700px) {
-  .vm-grid { grid-template-columns: 1fr 1fr 1fr; }
+/* ── Filter chips row below search ── */
+.vm-filter-chips {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 1rem 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: #fff;
+}
+.vm-filter-chips::-webkit-scrollbar { display: none; }
+
+.vm-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: none;
+  background: #f1f5f1;
+  color: #444;
+  border-radius: 50px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.38rem 1rem;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.vm-chip:hover {
+  background: #d4edda;
+  color: #1a6b2f;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(26,107,47,0.15);
+}
+.vm-chip.active {
+  background: linear-gradient(135deg, #1a6b2f, #2d9e4f);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(26,107,47,0.35);
+  transform: translateY(-1px);
+}
+/* per-chip accent colours when inactive */
+.vm-chip[data-level="LOW"]    { --chip-dot: #f9a825; }
+.vm-chip[data-level="MEDIUM"] { --chip-dot: #ef6c00; }
+.vm-chip[data-level="HIGH"]   { --chip-dot: #c62828; }
+
+/* ── Post type toggle (Sell / Donate) ── */
+.vm-post-type-btn {
+  flex: 1;
+  padding: 0.6rem 0.5rem;
+  border-radius: 12px;
+  border: 2px solid #c8e6c9;
+  background: #f0faf2;
+  color: #555;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.vm-post-type-btn.active {
+  background: linear-gradient(135deg, #1a6b2f, #2d9e4f);
+  border-color: #1a6b2f;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(26,107,47,0.3);
+}
+.vm-post-type-btn.donate.active {
+  background: linear-gradient(135deg, #a81c1c, #c62828);
+  border-color: #a81c1c;
+  box-shadow: 0 3px 10px rgba(168,28,28,0.3);
 }

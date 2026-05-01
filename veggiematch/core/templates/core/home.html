@@ -13,57 +13,72 @@
         <div class="vm-appbar-sub">La Trinidad Trading Post</div>
       </div>
     </div>
-    <div class="vm-appbar-right">
-    
-      <a href="{% url 'post_vegetable' %}" class="vm-appbar-post-btn">
-        <i class="bi bi-plus-lg"></i> Post
-      </a>
-    </div>
   </div>
 </header>
 
-<!-- ── Search ── -->
-<div class="vm-search-wrap">
-  <div class="vm-search-box">
-    <i class="bi bi-search vm-search-icon"></i>
-    <input type="text" id="searchInput" placeholder="Search vegetables..." class="vm-search-input"/>
-  </div>
-</div>
-
-<!-- ── Banner ── -->
+<!-- ── Hero Banner ── -->
 <div class="vm-banner-wrap">
   <div class="vm-banner">
     <div class="vm-banner-text">
-      <div class="vm-banner-tag">🌱 Fresh Today</div>
-      <h2 class="vm-banner-title">This Week's<br>Surplus Picks</h2>
-      <p class="vm-banner-sub">Direct from farmers.<br>Claim before time runs out.</p>
-      
+      <div class="vm-banner-tag">🌱 La Trinidad Trading Post</div>
+      <h2 class="vm-banner-title">Fresh Vegetables,<br>Less Waste</h2>
+      <p class="vm-banner-sub">Buy surplus veggies from local farmers or claim free donations for your community.</p>
     </div>
     <div class="vm-banner-emoji">🥬🥕🍅</div>
   </div>
 </div>
 
-<!-- ── Filter ── -->
-<div class="vm-filter-wrap">
-  <div class="vm-filter-scroll">
-    <button class="vm-filter-btn active" data-level="ALL">All</button>
-    <button class="vm-filter-btn low"    data-level="LOW">🟡 Low</button>
-    <button class="vm-filter-btn medium" data-level="MEDIUM">🟠 Medium</button>
-    <button class="vm-filter-btn high"   data-level="HIGH">🔴 High</button>
+<!-- ── Quick Actions ── -->
+<div style="display:flex;gap:0.75rem;padding:0 1rem 0.5rem;">
+  <a href="{% url 'posted_veggies' %}" style="flex:1;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
+    <div style="font-size:1.6rem;">🛒</div>
+    <div style="font-size:0.82rem;font-weight:800;color:#1a6e2e;margin-top:0.3rem;">Buy Vegetables</div>
+    <div style="font-size:0.72rem;color:#555;">Fresh surplus picks</div>
+  </a>
+  <a href="{% url 'rescue_list' %}" style="flex:1;background:#fdecea;border:1.5px solid #ffcdd2;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
+    <div style="font-size:1.6rem;">🍲</div>
+    <div style="font-size:0.82rem;font-weight:800;color:#a81c1c;margin-top:0.3rem;">Free Donations</div>
+    <div style="font-size:0.72rem;color:#555;">Help reduce food waste</div>
+  </a>
+  <a href="{% url 'post_vegetable' %}?type=sell" style="flex:1;background:#fff8e1;border:1.5px solid #ffe082;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
+    <div style="font-size:1.6rem;">📦</div>
+    <div style="font-size:0.82rem;font-weight:800;color:#e65100;margin-top:0.3rem;">Post Surplus</div>
+    <div style="font-size:0.72rem;color:#555;">Sell or donate yours</div>
+  </a>
+</div>
+
+<!-- ── Community Impact ── -->
+<div style="margin:0.6rem 1rem;background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border:1px solid #a5d6a7;border-radius:14px;padding:0.75rem 1rem;">
+  <div style="font-size:0.7rem;color:#2e7d32;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:0.5rem;">🌱 Community Impact</div>
+  <div style="display:flex;justify-content:space-around;text-align:center;gap:0.5rem;">
+    <div>
+      <div style="font-size:1.3rem;font-weight:800;color:#1b5e20;">{{ impact.kg_rescued|floatformat:1 }}</div>
+      <div style="font-size:0.72rem;color:#555;">kg rescued</div>
+    </div>
+    <div style="width:1px;background:#a5d6a7;"></div>
+    <div>
+      <div style="font-size:1.3rem;font-weight:800;color:#1b5e20;">{{ impact.posts_donated }}</div>
+      <div style="font-size:0.72rem;color:#555;">posts donated</div>
+    </div>
+    <div style="width:1px;background:#a5d6a7;"></div>
+    <div>
+      <div style="font-size:1.3rem;font-weight:800;color:#1b5e20;">{{ impact.kg_sold|floatformat:1 }}</div>
+      <div style="font-size:0.72rem;color:#555;">kg sold</div>
+    </div>
   </div>
 </div>
 
 <!-- ── Listings ── -->
 <div class="vm-listings-wrap">
   <div class="vm-listings-header">
-    <span class="vm-listings-title">Available Now</span>
-    <span class="vm-count-pill" id="countPill">{{ posts|length }}</span>
+    <span class="vm-listings-title">🥬 Recent Posts</span>
+    <a href="{% url 'posted_veggies' %}" class="vm-count-pill" style="text-decoration:none;">View All</a>
   </div>
 
   {% if posts %}
   <div class="vm-grid" id="postGrid">
-    {% for post in posts %}
-    <div class="vm-post-card" data-level="{{ post.surplus_level }}" data-name="{{ post.vegetable|lower }}">
+    {% for post in posts|slice:":1" %}
+    <div class="vm-post-card" data-name="{{ post.vegetable|lower }}">
 
       <div class="vm-post-img">
         {% if post.veggie_photo %}
@@ -71,48 +86,36 @@
         {% else %}
           <div class="vm-post-img-placeholder">🥬</div>
         {% endif %}
-        {% if post.surplus_level == 'LOW' %}
-          <span class="vm-surplus-badge low">🟡 Low</span>
-        {% elif post.surplus_level == 'MEDIUM' %}
-          <span class="vm-surplus-badge medium">🟠 Medium</span>
-        {% else %}
-          <span class="vm-surplus-badge high">🔴 High</span>
-        {% endif %}
       </div>
 
       <div class="vm-post-body">
         <div class="vm-post-name">{{ post.vegetable }}</div>
-        <div class="vm-post-farmer"><i class="bi bi-person-fill"></i> {{ post.farmer_name }}</div>
+        <div class="vm-post-farmer">
+          {% if post.farmer_photo %}
+            <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
+                 class="zoomable"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #a3d9b1;cursor:zoom-in;">
+          {% else %}
+            <i class="bi bi-person-fill"></i>
+          {% endif %}
+          {{ post.farmer_name }}
+        </div>
         <div class="vm-post-meta">
           <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg</span>
           <span><i class="bi bi-tag-fill"></i> ₱{{ post.price_per_kg }}/kg</span>
         </div>
         <div class="vm-post-timer">
-          <i class="bi bi-clock-fill"></i>
-          <span class="vm-timer" data-expiry="{{ post.expiry_time|date:'c' }}">calculating...</span>
+          <i class="bi bi-calendar-check-fill"></i>
+          <span>Posted {{ post.created_at|date:"M d, Y g:i A" }}</span>
+          <span class="vm-timer d-none" 
+                data-expiry="{{ post.expiry_time|date:'c' }}"
+                data-post-id="{{ post.pk }}"
+                data-created="{{ post.created_at|date:'c' }}"></span>
         </div>
         <div class="vm-post-actions">
           <a href="{% url 'buy_start' post.pk %}" class="vm-claim-btn">
             <i class="bi bi-basket-fill"></i> Buy
           </a>
-          <button type="button" class="vm-donate-btn btn-donate-open"
-                  data-post-id="{{ post.pk }}" data-veggie="{{ post.vegetable }}" title="Donate">
-            <i class="bi bi-heart-fill"></i>
-          </button>
-          <button type="button" class="vm-edit-btn btn-edit-open"
-                  data-post-id="{{ post.pk }}"
-                  data-vegetable="{{ post.vegetable }}"
-                  data-quantity="{{ post.quantity }}"
-                  data-price="{{ post.price_per_kg }}"
-                  data-note="{{ post.pickup_note }}"
-                  data-surplus="{{ post.surplus_level }}"
-                  title="Edit">
-            <i class="bi bi-pencil-fill"></i>
-          </button>
-          <button type="button" class="vm-delete-btn btn-delete-open"
-                  data-post-id="{{ post.pk }}" data-veggie="{{ post.vegetable }}" title="Delete">
-            <i class="bi bi-trash-fill"></i>
-          </button>
         </div>
       </div>
 
@@ -125,263 +128,73 @@
     <div class="vm-empty-emoji">🥦</div>
     <h4>No listings right now</h4>
     <p>Be the first to post surplus vegetables today.</p>
-    <a href="{% url 'post_vegetable' %}" class="vm-btn-green">
+    <a href="{% url 'post_vegetable' %}?type=sell" class="vm-btn-green">
       <i class="bi bi-plus-circle me-1"></i> Post Vegetables
     </a>
   </div>
   {% endif %}
 </div>
 
-<!-- ══ Donate Modal ══ -->
-<div class="modal fade" id="donateModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content vm-modal text-center">
-      <div class="vm-modal-body py-4">
-        <div style="font-size:3rem;">🍲</div>
-        <h5 class="fw-bold mt-3 mb-1">Move to Donate?</h5>
-        <p class="text-muted mb-1" style="font-size:0.9rem;"><strong id="donateVeggieName"></strong></p>
-        <p class="text-muted mb-3" style="font-size:0.85rem;">We'll send an OTP to your registered number to confirm.</p>
-        <div id="donateStep1">
-          <div class="d-flex gap-2 justify-content-center">
-            <button class="vm-btn-green px-4" id="sendDonateOtpBtn"><i class="bi bi-send-fill me-1"></i> Send OTP</button>
-            <button class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
-          </div>
+<!-- ── Recent Donations ── -->
+<div class="vm-listings-wrap" style="padding-top:0;">
+  <div class="vm-listings-header">
+    <span class="vm-listings-title">🍲 Recent Donations</span>
+    <a href="{% url 'rescue_list' %}" class="vm-count-pill" style="text-decoration:none;">View All</a>
+  </div>
+
+  {% if donate_posts %}
+  <div class="vm-grid">
+    {% for post in donate_posts %}
+    <div class="vm-post-card vm-rescue-card">
+      <div class="vm-post-img">
+        {% if post.veggie_photo %}
+          <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
+        {% else %}
+          <div class="vm-post-img-placeholder">🥬</div>
+        {% endif %}
+        <span class="vm-surplus-badge rescue-badge">🆓 Free</span>
+      </div>
+      <div class="vm-post-body">
+        <div class="vm-post-name">{{ post.vegetable }}</div>
+        <div class="vm-post-farmer">
+          {% if post.farmer_photo %}
+            <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
+                 class="zoomable"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #ffcdd2;cursor:zoom-in;">
+          {% else %}
+            <i class="bi bi-person-fill"></i>
+          {% endif %}
+          {{ post.farmer_name }}
         </div>
-        <div id="donateStep2" style="display:none;">
-          <p class="text-muted small mb-2">OTP sent to <strong id="donatePhoneDisplay"></strong></p>
-          <input type="text" id="donateOtpInput" class="otp-input form-control mb-2" maxlength="6" inputmode="numeric" placeholder="_ _ _ _ _ _">
-          <div class="vm-err d-none mb-2 justify-content-center" id="err-donate-otp"></div>
-          <button class="vm-btn-green w-100" id="confirmDonateOtpBtn"><i class="bi bi-check-circle-fill me-1"></i> Confirm Donate</button>
+        <div class="vm-post-meta">
+          <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg remaining</span>
+          <span class="text-success fw-bold"><i class="bi bi-gift-fill"></i> Free</span>
         </div>
-        <div id="donateStep3" style="display:none;">
-          <div style="font-size:2.5rem;">✅</div>
-          <p class="mt-2 fw-bold text-success">Post moved to Donate!</p>
-          <button class="vm-btn-green px-4 mt-2" onclick="location.reload()">OK</button>
+        <div class="vm-post-timer">
+          <i class="bi bi-calendar-check-fill"></i>
+          <span>Donated {% if post.donated_at %}{{ post.donated_at|date:"M d, Y g:i A" }}{% else %}{{ post.created_at|date:"M d, Y g:i A" }}{% endif %}</span>
+        </div>
+        <div class="vm-post-actions">
+          <a href="{% url 'rescue_start' post.pk %}" class="vm-rescue-btn">
+            <i class="bi bi-hand-index-thumb-fill"></i> Claim
+          </a>
         </div>
       </div>
     </div>
+    {% endfor %}
   </div>
+  {% else %}
+  <div class="vm-empty-state">
+    <div class="vm-empty-emoji">🍲</div>
+    <h4>No donations yet</h4>
+    <p>Unclaimed vegetables will appear here.</p>
+    <a href="{% url 'post_vegetable' %}?type=donate" class="vm-btn-red">
+      <i class="bi bi-heart-fill me-1"></i> Post a Donation
+    </a>
+  </div>
+  {% endif %}
 </div>
 
-<!-- ══ Edit Modal ══ -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content vm-modal">
-      <div class="vm-modal-top">
-        <div class="vm-form-icon mb-1">✏️</div>
-        <h5 class="vm-modal-title">Edit Post</h5>
-        <p class="vm-modal-sub" id="editModalSub"></p>
-        <button type="button" class="vm-modal-close" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="vm-modal-body">
-        <div id="editStep1">
-          <p class="text-muted small mb-3">We'll send an OTP to your registered number to verify ownership.</p>
-          <div class="d-flex gap-2">
-            <button class="vm-btn-green flex-grow-1" id="sendEditOtpBtn"><i class="bi bi-send-fill me-1"></i> Send OTP</button>
-            <button class="btn btn-light fw-bold px-3" data-bs-dismiss="modal">Cancel</button>
-          </div>
-        </div>
-        <div id="editStep2" style="display:none;">
-          <p class="text-muted small mb-2">OTP sent to <strong id="editPhoneDisplay"></strong></p>
-          <input type="text" id="editOtpInput" class="otp-input form-control mb-3" maxlength="6" inputmode="numeric" placeholder="_ _ _ _ _ _">
-          <div class="vm-err d-none mb-2" id="err-edit-otp"></div>
-          <div class="vm-field mb-2"><label class="vm-label">Vegetable Name</label><input type="text" id="edit_vegetable" class="form-control"/></div>
-          <div class="row g-2 mb-2">
-            <div class="col-6"><label class="vm-label">Quantity (kg)</label><input type="number" id="edit_quantity" class="form-control" step="0.1" min="0.1"/></div>
-            <div class="col-6"><label class="vm-label">Price/kg (₱)</label><input type="number" id="edit_price" class="form-control" step="0.5" min="1"/></div>
-          </div>
-          <div class="vm-field mb-2"><label class="vm-label">Surplus Level</label>
-            <select id="edit_surplus" class="form-select">
-              <option value="LOW">🟡 Low (5–20 kg)</option>
-              <option value="MEDIUM">🟠 Medium (20–100 kg)</option>
-              <option value="HIGH">🔴 High (100+ kg)</option>
-            </select>
-          </div>
-          <div class="vm-field mb-3"><label class="vm-label">Further Instructions</label><input type="text" id="edit_note" class="form-control" placeholder="Stall no., landmark..."/></div>
-          <button class="vm-btn-green w-100" id="confirmEditBtn"><i class="bi bi-check-circle-fill me-1"></i> Save Changes</button>
-        </div>
-        <div id="editStep3" style="display:none;">
-          <div class="text-center py-2"><div style="font-size:2.5rem;">✅</div>
-          <p class="mt-2 fw-bold text-success">Post updated!</p>
-          <button class="vm-btn-green px-4 mt-2" onclick="location.reload()">OK</button></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- ══ Delete Modal ══ -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content vm-modal text-center">
-      <div class="vm-modal-body py-4">
-        <div style="font-size:3rem;">🗑️</div>
-        <h5 class="fw-bold mt-3 mb-1">Delete Post?</h5>
-        <p class="text-muted mb-1" style="font-size:0.9rem;"><strong id="deleteVeggieName"></strong></p>
-        <p class="text-muted mb-3" style="font-size:0.85rem;">We'll send an OTP to confirm you own this post.</p>
-        <div id="deleteStep1">
-          <div class="d-flex gap-2 justify-content-center">
-            <button class="vm-btn-red px-4" id="sendDeleteOtpBtn"><i class="bi bi-send-fill me-1"></i> Send OTP</button>
-            <button class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
-          </div>
-        </div>
-        <div id="deleteStep2" style="display:none;">
-          <p class="text-muted small mb-2">OTP sent to <strong id="deletePhoneDisplay"></strong></p>
-          <input type="text" id="deleteOtpInput" class="otp-input form-control mb-2" maxlength="6" inputmode="numeric" placeholder="_ _ _ _ _ _">
-          <div class="vm-err d-none mb-2 justify-content-center" id="err-delete-otp"></div>
-          <button class="vm-btn-red w-100" id="confirmDeleteBtn"><i class="bi bi-trash-fill me-1"></i> Yes, Delete</button>
-        </div>
-        <div id="deleteStep3" style="display:none;">
-          <div style="font-size:2.5rem;">✅</div>
-          <p class="mt-2 fw-bold text-success">Post deleted.</p>
-          <button class="vm-btn-green px-4 mt-2" onclick="location.reload()">OK</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-{% endblock %}
-
-{% block extra_js %}
-<script>
-const csrf = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
-
-// ── Filter ────────────────────────────────────────────────────
-document.querySelectorAll('.vm-filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.vm-filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const level = btn.dataset.level;
-    let visible = 0;
-    document.querySelectorAll('.vm-post-card').forEach(card => {
-      const show = level === 'ALL' || card.dataset.level === level;
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
-    });
-    document.getElementById('countPill').textContent = visible;
-  });
-});
-
-// ── Search ────────────────────────────────────────────────────
-document.getElementById('searchInput').addEventListener('input', function () {
-  const q = this.value.toLowerCase().trim();
-  let visible = 0;
-  document.querySelectorAll('.vm-post-card').forEach(card => {
-    const show = !q || card.dataset.name.includes(q);
-    card.style.display = show ? '' : 'none';
-    if (show) visible++;
-  });
-  document.getElementById('countPill').textContent = visible;
-});
-
-// ── Donate ────────────────────────────────────────────────────
-let donatePostId = '';
-document.querySelectorAll('.btn-donate-open').forEach(btn => {
-  btn.addEventListener('click', () => {
-    donatePostId = btn.dataset.postId;
-    document.getElementById('donateVeggieName').textContent = btn.dataset.veggie;
-    ['donateStep1','donateStep2','donateStep3'].forEach((id,i) => document.getElementById(id).style.display = i===0?'':'none');
-    document.getElementById('donateOtpInput').value = '';
-    const e = document.getElementById('err-donate-otp'); e.textContent=''; e.classList.add('d-none');
-    new bootstrap.Modal(document.getElementById('donateModal')).show();
-  });
-});
-document.getElementById('sendDonateOtpBtn').addEventListener('click', async () => {
-  const btn = document.getElementById('sendDonateOtpBtn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
-  const res = await fetch(`/post/${donatePostId}/donate/`, {method:'POST',headers:{'X-CSRFToken':csrf(),'Content-Type':'application/x-www-form-urlencoded'},body:''});
-  const data = await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-send-fill me-1"></i> Send OTP';
-  if(data.ok){document.getElementById('donatePhoneDisplay').textContent=data.phone;document.getElementById('donateStep1').style.display='none';document.getElementById('donateStep2').style.display='';document.getElementById('donateOtpInput').focus();}
-});
-document.getElementById('confirmDonateOtpBtn').addEventListener('click', async () => {
-  const btn=document.getElementById('confirmDonateOtpBtn'),errEl=document.getElementById('err-donate-otp');
-  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Verifying...';
-  const fd=new FormData(); fd.append('otp_code',document.getElementById('donateOtpInput').value);
-  const res=await fetch(`/post/${donatePostId}/donate/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
-  const data=await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-check-circle-fill me-1"></i> Confirm Donate';
-  if(data.ok){document.getElementById('donateStep2').style.display='none';document.getElementById('donateStep3').style.display='';}
-  else{errEl.textContent=data.error||'Invalid OTP.';errEl.classList.remove('d-none');}
-});
-document.getElementById('donateOtpInput').addEventListener('input',function(){if(this.value.length===6)document.getElementById('confirmDonateOtpBtn').click();});
-
-// ── Edit ──────────────────────────────────────────────────────
-let editPostId = '';
-document.querySelectorAll('.btn-edit-open').forEach(btn => {
-  btn.addEventListener('click', () => {
-    editPostId = btn.dataset.postId;
-    document.getElementById('editModalSub').textContent = btn.dataset.vegetable;
-    document.getElementById('edit_vegetable').value = btn.dataset.vegetable;
-    document.getElementById('edit_quantity').value  = btn.dataset.quantity;
-    document.getElementById('edit_price').value     = btn.dataset.price;
-    document.getElementById('edit_note').value      = btn.dataset.note;
-    document.getElementById('edit_surplus').value   = btn.dataset.surplus;
-    ['editStep1','editStep2','editStep3'].forEach((id,i) => document.getElementById(id).style.display = i===0?'':'none');
-    document.getElementById('editOtpInput').value = '';
-    const e=document.getElementById('err-edit-otp'); e.textContent=''; e.classList.add('d-none');
-    new bootstrap.Modal(document.getElementById('editModal')).show();
-  });
-});
-document.getElementById('sendEditOtpBtn').addEventListener('click', async () => {
-  const btn=document.getElementById('sendEditOtpBtn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
-  const res=await fetch(`/post/${editPostId}/edit/`,{method:'POST',headers:{'X-CSRFToken':csrf(),'Content-Type':'application/x-www-form-urlencoded'},body:''});
-  const data=await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-send-fill me-1"></i> Send OTP';
-  if(data.ok){document.getElementById('editPhoneDisplay').textContent=data.phone;document.getElementById('editStep1').style.display='none';document.getElementById('editStep2').style.display='';document.getElementById('editOtpInput').focus();}
-  else{alert(data.error||'Error.');}
-});
-document.getElementById('confirmEditBtn').addEventListener('click', async () => {
-  const btn=document.getElementById('confirmEditBtn'),errEl=document.getElementById('err-edit-otp');
-  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
-  const fd=new FormData();
-  fd.append('otp_code',      document.getElementById('editOtpInput').value);
-  fd.append('vegetable',     document.getElementById('edit_vegetable').value);
-  fd.append('quantity',      document.getElementById('edit_quantity').value);
-  fd.append('price_per_kg',  document.getElementById('edit_price').value);
-  fd.append('pickup_note',   document.getElementById('edit_note').value);
-  fd.append('surplus_level', document.getElementById('edit_surplus').value);
-  const res=await fetch(`/post/${editPostId}/edit/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
-  const data=await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-check-circle-fill me-1"></i> Save Changes';
-  if(data.ok){document.getElementById('editStep2').style.display='none';document.getElementById('editStep3').style.display='';}
-  else{errEl.textContent=data.error||'Invalid OTP.';errEl.classList.remove('d-none');}
-});
-document.getElementById('editOtpInput').addEventListener('input',function(){if(this.value.length===6)document.getElementById('confirmEditBtn').click();});
-
-// ── Delete ────────────────────────────────────────────────────
-let deletePostId = '';
-document.querySelectorAll('.btn-delete-open').forEach(btn => {
-  btn.addEventListener('click', () => {
-    deletePostId = btn.dataset.postId;
-    document.getElementById('deleteVeggieName').textContent = btn.dataset.veggie;
-    ['deleteStep1','deleteStep2','deleteStep3'].forEach((id,i) => document.getElementById(id).style.display = i===0?'':'none');
-    document.getElementById('deleteOtpInput').value = '';
-    const e=document.getElementById('err-delete-otp'); e.textContent=''; e.classList.add('d-none');
-    new bootstrap.Modal(document.getElementById('deleteModal')).show();
-  });
-});
-document.getElementById('sendDeleteOtpBtn').addEventListener('click', async () => {
-  const btn=document.getElementById('sendDeleteOtpBtn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
-  const res=await fetch(`/post/${deletePostId}/delete/`,{method:'POST',headers:{'X-CSRFToken':csrf(),'Content-Type':'application/x-www-form-urlencoded'},body:''});
-  const data=await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-send-fill me-1"></i> Send OTP';
-  if(data.ok){document.getElementById('deletePhoneDisplay').textContent=data.phone;document.getElementById('deleteStep1').style.display='none';document.getElementById('deleteStep2').style.display='';document.getElementById('deleteOtpInput').focus();}
-  else{alert(data.error||'Error.');}
-});
-document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
-  const btn=document.getElementById('confirmDeleteBtn'),errEl=document.getElementById('err-delete-otp');
-  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>Deleting...';
-  const fd=new FormData(); fd.append('otp_code',document.getElementById('deleteOtpInput').value);
-  const res=await fetch(`/post/${deletePostId}/delete/verify/`,{method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
-  const data=await res.json();
-  btn.disabled=false; btn.innerHTML='<i class="bi bi-trash-fill me-1"></i> Yes, Delete';
-  if(data.ok){document.getElementById('deleteStep2').style.display='none';document.getElementById('deleteStep3').style.display='';}
-  else{errEl.textContent=data.error||'Invalid OTP.';errEl.classList.remove('d-none');}
-});
-document.getElementById('deleteOtpInput').addEventListener('input',function(){if(this.value.length===6)document.getElementById('confirmDeleteBtn').click();});
-</script>
 {% endblock %}

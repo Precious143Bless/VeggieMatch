@@ -3,13 +3,15 @@ from django.utils import timezone
 
 
 class VegetablePost(models.Model):
-    STATUS_ACTIVE  = 'ACTIVE'
-    STATUS_BOUGHT  = 'BOUGHT'    # was CLAIMED
-    STATUS_RESCUE  = 'RESCUE'
-    STATUS_CHOICES = [
-        (STATUS_ACTIVE, 'Active'),
-        (STATUS_BOUGHT, 'Bought'),
-        (STATUS_RESCUE, 'Available for Donate'),
+    STATUS_ACTIVE   = 'ACTIVE'
+    STATUS_BOUGHT   = 'BOUGHT'   # paid purchase completed
+    STATUS_CLAIMED  = 'CLAIMED'  # donated post fully claimed by community
+    STATUS_RESCUE   = 'RESCUE'
+    STATUS_CHOICES  = [
+        (STATUS_ACTIVE,  'Active'),
+        (STATUS_BOUGHT,  'Bought'),
+        (STATUS_CLAIMED, 'Fully Claimed (Donated)'),
+        (STATUS_RESCUE,  'Available for Donate'),
     ]
 
     SURPLUS_LOW    = 'LOW'
@@ -29,13 +31,17 @@ class VegetablePost(models.Model):
     surplus_level  = models.CharField(max_length=10, choices=SURPLUS_CHOICES, default=SURPLUS_LOW)
     quantity       = models.DecimalField(max_digits=8, decimal_places=2)
     price_per_kg   = models.DecimalField(max_digits=8, decimal_places=2, default=1.00)
-    pickup_address = models.CharField(max_length=255, default='La Trinidad Trading Post, Benguet')
+    pickup_address = models.CharField(max_length=255)
     pickup_note    = models.CharField(max_length=255, blank=True)
     status         = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
     created_at     = models.DateTimeField(auto_now_add=True)
-    expiry_time    = models.DateTimeField()
+    donated_at     = models.DateTimeField(null=True, blank=True)
+    expiry_time    = models.DateTimeField(null=True, blank=True)  # null = no expiry (direct donations)
+    expiry_notified = models.BooleanField(default=False)  # True once the 30-min warning SMS is sent
 
     def is_expired(self):
+        if self.expiry_time is None:
+            return False  # donations with no expiry never expire
         return timezone.now() >= self.expiry_time
 
     def get_full_location(self):
@@ -55,8 +61,9 @@ class VegetablePost(models.Model):
 
 
 class BuyRecord(models.Model):
-    """Buyer purchases vegetables from an active post."""
-    post         = models.OneToOneField(VegetablePost, on_delete=models.CASCADE, related_name='buy')
+    """Buyer purchases vegetables from an active post.
+    Multiple buyers can take partial quantities until the post is fully bought."""
+    post         = models.ForeignKey(VegetablePost, on_delete=models.CASCADE, related_name='buys')
     buyer_name   = models.CharField(max_length=100)
     buyer_number = models.CharField(max_length=20)
     buyer_photo  = models.ImageField(upload_to='faces/buyers/', blank=True, null=True)
@@ -65,11 +72,13 @@ class BuyRecord(models.Model):
 
     class Meta:
         db_table = 'core_buyrecord'
+        unique_together = [('post', 'buyer_number')]
 
 
 class RescueRecord(models.Model):
-    """Community kitchen/person claims a rescued (donated) post for free."""
-    post           = models.OneToOneField(VegetablePost, on_delete=models.CASCADE, related_name='rescue')
+    """Community kitchen/person claims a portion of a donated post for free.
+    Multiple claimers can take partial quantities until the post is fully claimed."""
+    post           = models.ForeignKey(VegetablePost, on_delete=models.CASCADE, related_name='rescues')
     claimer_name   = models.CharField(max_length=100)
     claimer_number = models.CharField(max_length=20)
     claimer_photo  = models.ImageField(upload_to='faces/claimers/', blank=True, null=True)
@@ -78,6 +87,7 @@ class RescueRecord(models.Model):
 
     class Meta:
         db_table = 'core_rescuerecord'
+        unique_together = [('post', 'claimer_number')]
 
 
 class OTPVerification(models.Model):
@@ -87,6 +97,7 @@ class OTPVerification(models.Model):
     PURPOSE_DONATE = 'DONATE'
     PURPOSE_EDIT   = 'EDIT'
     PURPOSE_DELETE = 'DELETE'
+    PURPOSE_MANAGE = 'MANAGE'
     PURPOSE_CHOICES = [
         (PURPOSE_POST,   'Post'),
         (PURPOSE_BUY,    'Buy'),
@@ -94,6 +105,7 @@ class OTPVerification(models.Model):
         (PURPOSE_DONATE, 'Donate'),
         (PURPOSE_EDIT,   'Edit'),
         (PURPOSE_DELETE, 'Delete'),
+        (PURPOSE_MANAGE, 'Manage'),
     ]
 
     phone_number = models.CharField(max_length=20)

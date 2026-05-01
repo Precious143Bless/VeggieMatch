@@ -42,8 +42,13 @@
         <div class="vm-rescue-summary-farmer">
           <i class="bi bi-person-fill" style="color:var(--green);"></i> {{ post.farmer_name }}
           &nbsp;·&nbsp;
-          <i class="bi bi-clock-fill" style="color:var(--orange);"></i>
-          <span class="vm-timer" data-expiry="{{ post.expiry_time|date:'c' }}">soon</span>
+          <i class="bi bi-circle-fill" style="color:#4caf50;font-size:0.55rem;vertical-align:middle;"></i>
+          <span style="font-size:0.82rem;color:#2e7d32;font-weight:700;">Fresh today</span>
+          <!-- hidden timer still fires expiry warning SMS — not shown to buyer -->
+          <span class="vm-timer d-none"
+                data-expiry="{{ post.expiry_time|date:'c' }}"
+                data-post-id="{{ post.pk }}"
+                data-created="{{ post.created_at|date:'c' }}"></span>
         </div>
       </div>
     </div>
@@ -132,8 +137,38 @@
     <div class="vm-success-card">
       <div class="vm-success-icon">✅</div>
       <h3>Purchase Confirmed!</h3>
-      <p id="buySuccessMsg" class="text-muted"></p>
-      <a href="{% url 'home' %}" class="vm-btn-green mt-3">
+      <p id="buySuccessMsg" class="text-muted mb-3"></p>
+
+      <!-- Purchase receipt -->
+      <div id="buyReceipt" style="background:#f0faf4;border:1.5px solid #a3d9b1;border-radius:14px;padding:1.1rem;text-align:left;width:100%;margin-bottom:1rem;">
+        <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:0.5rem;">Purchase Receipt</div>
+        <div style="font-weight:700;font-size:1.1rem;margin-bottom:0.6rem;" id="buy-rcpt-vegetable"></div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+          <span style="font-size:0.9rem;"><i class="bi bi-box-seam-fill text-success me-1"></i><span id="buy-rcpt-quantity"></span> kg</span>
+          <span style="font-size:0.9rem;font-weight:700;color:var(--green);">₱<span id="buy-rcpt-total"></span> total</span>
+        </div>
+        <div style="font-size:0.88rem;color:#555;margin-bottom:0.4rem;"><i class="bi bi-geo-alt-fill text-success me-1"></i><span id="buy-rcpt-location"></span></div>
+        <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.3rem;color:#444;">Farmer Contact</div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
+            <img id="buy-rcpt-farmer-photo" src="" alt="" class="zoomable" style="display:none;width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #a3d9b1;cursor:zoom-in;">
+            <div>
+              <div style="font-size:0.9rem;" id="buy-rcpt-farmer-name"></div>
+              <div style="font-size:0.9rem;margin-top:0.2rem;" id="buy-rcpt-farmer-phone"></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.3rem;color:#444;">Your Photo on Record</div>
+          <img id="buy-rcpt-buyer-photo" src="" alt="Your photo" class="zoomable" style="display:none;width:56px;height:56px;border-radius:10px;object-fit:cover;border:2px solid #a3d9b1;cursor:zoom-in;">
+        </div>
+        <div style="margin-top:0.7rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;font-size:0.78rem;color:#888;">
+          Ref: <span id="buy-rcpt-ref" style="font-family:monospace;"></span>
+        </div>
+      </div>
+
+      <p class="text-muted small mb-3">Screenshot this receipt to show the farmer at pickup.</p>
+      <a href="{% url 'home' %}" class="vm-btn-green w-100">
         <i class="bi bi-house-fill me-2"></i>Back to Home
       </a>
     </div>
@@ -163,16 +198,21 @@ const MAX_QTY      = {{ post.quantity }};
     overlay.style.display = 'none';
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-      video.srcObject = stream;
-      video.style.display   = 'block';
-      capBtn.style.display  = 'inline-flex';
-      retake.style.display  = 'none';
-      preview.style.display = 'none';
-      hidden.value = '';
     } catch {
-      overlay.style.display = 'flex';
-      overlay.innerHTML = '<i class="bi bi-camera-video-off-fill"></i><span>Camera denied</span>';
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch {
+        overlay.style.display = 'flex';
+        overlay.innerHTML = '<i class="bi bi-camera-video-off-fill"></i><span>Camera denied</span>';
+        return;
+      }
     }
+    video.srcObject = stream;
+    video.style.display   = 'block';
+    capBtn.style.display  = 'inline-flex';
+    retake.style.display  = 'none';
+    preview.style.display = 'none';
+    hidden.value = '';
   }
   overlay.addEventListener('click', startCam);
   capBtn.addEventListener('click', () => {
@@ -267,7 +307,24 @@ document.getElementById('buyOtpForm').addEventListener('submit', async (e) => {
   btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Confirm Purchase';
 
   if (data.ok) {
-    document.getElementById('buySuccessMsg').textContent = data.message;
+    document.getElementById('buySuccessMsg').textContent = data.message || 'Purchase confirmed!';
+    const qty   = parseFloat(data.quantity  || 0);
+    const price = parseFloat(data.price_per_kg || 0);
+    document.getElementById('buy-rcpt-vegetable').textContent    = data.vegetable    || '';
+    document.getElementById('buy-rcpt-quantity').textContent     = data.quantity     || '';
+    document.getElementById('buy-rcpt-total').textContent        = (qty * price).toFixed(0);
+    document.getElementById('buy-rcpt-location').textContent     = data.location     || '';
+    document.getElementById('buy-rcpt-farmer-name').innerHTML    = data.farmer_name  ? `<i class="bi bi-person-fill me-1" style="color:var(--green);"></i>${data.farmer_name}` : '';
+    document.getElementById('buy-rcpt-farmer-phone').innerHTML   = data.farmer_phone ? `<i class="bi bi-telephone-fill me-1" style="color:var(--green);"></i><a href="tel:${data.farmer_phone}" style="color:var(--green);font-weight:600;">${data.farmer_phone}</a>` : '';
+    document.getElementById('buy-rcpt-ref').textContent          = data.ref          || '';
+    if (data.farmer_photo_url) {
+      const fp = document.getElementById('buy-rcpt-farmer-photo');
+      fp.src = data.farmer_photo_url; fp.style.display = '';
+    }
+    if (data.buyer_photo_url) {
+      const bp = document.getElementById('buy-rcpt-buyer-photo');
+      bp.src = data.buyer_photo_url; bp.style.display = '';
+    }
     setStep(3);
   } else {
     const errEl = document.getElementById('err-buy-otp');
