@@ -3,6 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 import dj_database_url
+import re
 
 # Load environment variables
 load_dotenv()
@@ -77,20 +78,64 @@ WSGI_APPLICATION = 'veggiematch.wsgi.application'
 
 if ON_RENDER or os.getenv('DATABASE_URL'):
     # Production: Use PostgreSQL (Supabase or Render PostgreSQL)
-    # Get the DATABASE_URL from environment variable
     database_url = os.getenv('DATABASE_URL')
     
     if not database_url:
         raise RuntimeError('DATABASE_URL environment variable is not set for production!')
     
+    # Ensure SSL mode is set
+    if 'sslmode' not in database_url:
+        database_url += '?sslmode=require'
+    
+    # Force IPv4 connection by disabling IPv6 resolution
+    # This helps with Render's IPv6 connectivity issues to Supabase
+    import socket
+    original_getaddrinfo = socket.getaddrinfo
+    
+    def ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+        # Force IPv4 (AF_INET) instead of IPv6 (AF_INET6)
+        return original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+    
+    # Apply the IPv4-only patch
+    socket.getaddrinfo = ipv4_only_getaddrinfo
+    
+    # Configure the database
     DATABASES = {
         'default': dj_database_url.config(
             default=database_url,
             conn_max_age=600,
             conn_health_checks=True,
-            ssl_require=True,  # Supabase requires SSL
+            ssl_require=True,
         )
     }
+    
+    # Add connection options for better reliability and IPv4 forcing
+    DATABASES['default']['OPTIONS'] = {
+        'connect_timeout': 10,
+        'keepalives': 1,
+        'keepalives_idle': 30,
+        'keepalives_interval': 10,
+        'keepalives_count': 5,
+        'sslmode': 'require',
+    }
+    
+    # Also try to extract and set hostaddr if possible (bypasses DNS)
+    try:
+        # Parse the host from DATABASE_URL
+        host_match = re.search(r'@([^:/]+)', database_url)
+        if host_match:
+            original_host = host_match.group(1)
+            # Try to resolve to IPv4 address
+            import socket
+            try:
+                ipv4_addr = socket.gethostbyname(original_host)
+                # Override host with IP address to force IPv4
+                DATABASES['default']['HOST'] = ipv4_addr
+            except socket.gaierror:
+                pass
+    except Exception:
+        pass
+        
 else:
     # Local development: Use SQLite
     DATABASES = {
@@ -103,9 +148,14 @@ else:
 # ===================== STATIC & MEDIA FILES =====================
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',  # Custom static files directory
-]
+
+# Only add STATICFILES_DIRS if the directory exists
+static_dir = BASE_DIR / 'static'
+if static_dir.exists():
+    STATICFILES_DIRS = [static_dir]
+else:
+    STATICFILES_DIRS = []  # Empty list if directory doesn't exist
+
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
