@@ -2,6 +2,10 @@
 # Exit on error
 set -o errexit
 
+# Create media directory for user uploads
+mkdir -p media
+mkdir -p staticfiles
+
 # Install dependencies
 pip install -r requirements.txt
 
