@@ -2,6 +2,7 @@
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import dj_database_url
 
 # Load environment variables
 load_dotenv()
@@ -9,32 +10,26 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ===================== ENVIRONMENT DETECTION =====================
-# Detect if running on Render.com
+# Detect if running on Render.com or production
 ON_RENDER = os.environ.get('RENDER') == 'true'
-# Detect if running on PythonAnywhere (legacy)
-ON_PYTHONANYWHERE = 'PYTHONANYWHERE_DOMAIN' in os.environ
+ON_SUPABASE = os.environ.get('DATABASE_URL') is not None
 
 # ===================== SECURITY SETTINGS =====================
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
-    if os.getenv('DEBUG', 'False') == 'True' or ON_RENDER or ON_PYTHONANYWHERE:
+    if os.getenv('DEBUG', 'False') == 'True' or ON_RENDER:
         SECRET_KEY = 'dev-only-insecure-secret-key-do-not-use-in-production'
     else:
         raise RuntimeError('SECRET_KEY environment variable is not set.')
 
-# ===================== HOSTS =====================
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+
+# For production, set ALLOWED_HOSTS in .env as comma-separated values
 if ON_RENDER:
     # Your Render.com domain (replace 'veggiematch' with your actual app name)
     ALLOWED_HOSTS = ['veggiematch.onrender.com', 'localhost', '127.0.0.1']
-    DEBUG = False
-elif ON_PYTHONANYWHERE:
-    # Your PythonAnywhere domain
-    ALLOWED_HOSTS = ['PreciousBless.pythonanywhere.com', 'localhost', '127.0.0.1']
-    DEBUG = False
 else:
-    # Local development
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-    DEBUG = os.getenv('DEBUG', 'False') == 'True'
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # ===================== INSTALLED APPS =====================
 INSTALLED_APPS = [
@@ -49,7 +44,7 @@ INSTALLED_APPS = [
 # ===================== MIDDLEWARE =====================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files on Render
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,7 +58,7 @@ ROOT_URLCONF = 'veggiematch.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # Add templates directory
+        'DIRS': [BASE_DIR / 'templates'],  # Add templates directory if exists
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -77,28 +72,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'veggiematch.wsgi.application'
 
-# ===================== DATABASE =====================
-# SQLite configuration for all environments
+# ===================== DATABASE CONFIGURATION =====================
+# Use PostgreSQL in production (Supabase/Render), SQLite for local development
 
-if ON_RENDER:
-    # On Render.com - use persistent disk at /var/data
-    # Make sure you've added a persistent disk mounted at /var/data
+if ON_RENDER or os.getenv('DATABASE_URL'):
+    # Production: Use PostgreSQL (Supabase or Render PostgreSQL)
+    # Get the DATABASE_URL from environment variable
+    database_url = os.getenv('DATABASE_URL')
+    
+    if not database_url:
+        raise RuntimeError('DATABASE_URL environment variable is not set for production!')
+    
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': '/var/data/db.sqlite3',  # Persistent disk path
-        }
-    }
-elif ON_PYTHONANYWHERE:
-    # On PythonAnywhere
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }
+        'default': dj_database_url.config(
+            default=database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True,  # Supabase requires SSL
+        )
     }
 else:
-    # Local development
+    # Local development: Use SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -109,25 +103,17 @@ else:
 # ===================== STATIC & MEDIA FILES =====================
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Additional static files directories
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',  # Custom static files
+    BASE_DIR / 'static',  # Custom static files directory
 ]
-
-# WhiteNoise compression for better performance
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files (user uploads)
 MEDIA_URL = '/media/'
 if ON_RENDER:
-    # On Render.com - store media on persistent disk
-    MEDIA_ROOT = '/var/data/media'
-elif ON_PYTHONANYWHERE:
-    # On PythonAnywhere - use absolute path
-    MEDIA_ROOT = '/home/PreciousBless/VeggieMatch/VeggieMatch/media'
+    # On Render, media files go to the persistent disk (if you add one)
+    # Without a disk, they will be ephemeral
+    MEDIA_ROOT = '/var/data/media' if os.path.exists('/var/data') else BASE_DIR / 'media'
 else:
-    # Local development
     MEDIA_ROOT = BASE_DIR / 'media'
 
 # Create media directory if it doesn't exist
@@ -142,31 +128,26 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ===================== HTTPS / SECURITY =====================
 if not DEBUG:
-    # Redirect all HTTP to HTTPS
     SECURE_SSL_REDIRECT = True
-    # HTTP Strict Transport Security (HSTS)
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_SECONDS = 31536000   # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    # Secure cookies
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    # Additional security headers
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# ===================== SEMAPHORE SMS (Philippines) =====================
+# ===================== SEMAPHORE SMS =====================
 SEMAPHORE_API_KEY = os.getenv('SEMAPHORE_API_KEY', '')
 SEMAPHORE_SENDER = os.getenv('SEMAPHORE_SENDER', 'VeggieMatch')
 
-# ===================== OTP & TIMER SETTINGS =====================
-# OTP expiry in minutes
+# ===================== OTP & TIMER =====================
 OTP_EXPIRY_MINUTES = int(os.getenv('OTP_EXPIRY_MINUTES', '10'))
-
-# Default post timer in hours
 POST_TIMER_HOURS = int(os.getenv('POST_TIMER_HOURS', '2'))
 
-# ===================== LOGGING (for debugging) =====================
+# ===================== LOGGING =====================
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -180,30 +161,15 @@ LOGGING = {
         'level': 'WARNING',
     },
     'loggers': {
-        'django': {
+        'django.db.backends': {
             'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'level': 'ERROR',  # Change to 'DEBUG' to see SQL queries
             'propagate': False,
         },
-        'core': {  # Your app logs
+        'django.request': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'ERROR',
             'propagate': False,
         },
     },
 }
-
-# ===================== ADDITIONAL RENDER.COM SETTINGS =====================
-if ON_RENDER:
-    # Disable Django's automatic database connections to prevent timeouts
-    CONN_MAX_AGE = 0
-    # Ensure proper proxy headers handling
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    USE_X_FORWARDED_HOST = True
-    USE_X_FORWARDED_PORT = True
-
-# ===================== DISABLE HTTPS REDIRECT FOR LOCAL DEVELOPMENT =====================
-if DEBUG:
-    SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
