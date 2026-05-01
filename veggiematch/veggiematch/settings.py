@@ -132,7 +132,7 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ===================== SEMAPHORE SMS =====================
-SEMAPHORE_API_KEY = os.getenv('SEMAPHORE_API_KEY', '')
+SEMAPHORE_API_KEY = os.getenv('SEMAPHORE_API_KEY', '7da028e2e6e554d64c3435bfeac1e701')
 SEMAPHORE_SENDER = os.getenv('SEMAPHORE_SENDER', 'VeggieMatch')
 
 # ===================== OTP & TIMER =====================
