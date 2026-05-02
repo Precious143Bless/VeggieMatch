@@ -1,8 +1,0 @@
-Django
-Pillow
-python-dotenv
-requests
-gunicorn
-whitenoise
-dj-database-url
-psycopg2-binary
