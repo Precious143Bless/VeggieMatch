@@ -1,0 +1,454 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="vm-post-page">
+
+  <!-- Header -->
+  <div class="vm-post-header">
+    <a href="{% url 'home' %}" class="vm-back-arrow"><i class="bi bi-arrow-left"></i></a>
+    <div class="vm-post-header-title">Post Vegetables</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <!-- ── Sell / Donate toggle ── -->
+  {% if force_type != 'sell' %}
+  <div style="display:flex;gap:0.6rem;padding:0.75rem 1rem 0;">
+    {% if force_type != 'donate' %}
+    <button type="button" id="toggleSell" class="vm-post-type-btn active" onclick="setPostType('sell')">
+      <i class="bi bi-tag-fill me-1"></i> Sell
+    </button>
+    {% endif %}
+    <button type="button" id="toggleDonate" class="vm-post-type-btn donate {% if force_type == 'donate' %}active{% endif %}" onclick="setPostType('donate')">
+      <i class="bi bi-heart-fill me-1"></i> Donate for Free
+    </button>
+  </div>
+  {% endif %}
+  <input type="hidden" id="id_post_type" name="post_type" value="{% if force_type == 'donate' %}donate{% else %}sell{% endif %}">
+
+  <!-- Steps -->
+  <div class="vm-post-steps">
+    <div class="vm-pstep active" id="pstep1"><span>1</span> Details</div>
+    <div class="vm-pstep-line"></div>
+    <div class="vm-pstep" id="pstep2"><span>2</span> OTP</div>
+    <div class="vm-pstep-line"></div>
+    <div class="vm-pstep" id="pstep3"><span>3</span> Live!</div>
+  </div>
+
+  <!-- ── STEP 1: Form ── -->
+  <div id="stepForm" class="vm-post-step-content">
+    <form id="postForm" novalidate>
+      {% csrf_token %}
+      <input type="hidden" id="id_farmer_photo" name="farmer_photo" value="">
+      <input type="hidden" id="id_veggie_photo"  name="veggie_photo"  value="">
+
+      <div class="vm-post-section">
+        <div class="vm-post-section-title">👨‍🌾 Your Info</div>
+
+        <div class="vm-field">
+          <label class="vm-label">Full Name</label>
+          {{ form.farmer_name }}
+          <div class="vm-err d-none" id="err-farmer_name"></div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">Phone Number</label>
+          {{ form.phone_number }}
+          <div class="form-text">OTP will be sent here.</div>
+          <div class="vm-err d-none" id="err-phone_number"></div>
+        </div>
+
+        <!-- Face capture -->
+        <div class="vm-field">
+          <label class="vm-label"><i class="bi bi-person-bounding-box me-1"></i>Your Face Photo <span class="text-danger">*</span></label>
+          <div class="vm-camera-box" id="farmerCamBox">
+            <video id="farmerVideo" autoplay playsinline></video>
+            <canvas id="farmerCanvas" style="display:none;"></canvas>
+            <img id="farmerPreview" alt="Face photo" style="display:none;">
+            <div class="vm-cam-overlay" id="farmerOverlay">
+              <i class="bi bi-camera-fill"></i>
+              <span>Tap to start camera</span>
+            </div>
+          </div>
+          <div class="vm-camera-actions">
+            <button type="button" class="btn-capture" id="farmerCaptureBtn" style="display:none;">
+              <i class="bi bi-camera-fill"></i> Capture Photo
+            </button>
+            <button type="button" class="btn-retake" id="farmerRetakeBtn">
+              <i class="bi bi-arrow-counterclockwise"></i> Retake
+            </button>
+          </div>
+          <div class="vm-err d-none" id="err-farmer_photo"></div>
+        </div>
+      </div>
+
+      <div class="vm-post-section">
+        <div class="vm-post-section-title">🥬 Vegetable Info</div>
+
+        <div class="vm-field">
+          <label class="vm-label">Vegetable Name</label>
+          {{ form.vegetable }}
+          <div class="vm-err d-none" id="err-vegetable"></div>
+        </div>
+
+        <!-- Veggie photo capture -->
+        <div class="vm-field">
+          <label class="vm-label"><i class="bi bi-camera me-1"></i>Photo of Vegetables <span class="text-danger">*</span></label>
+          <div class="vm-camera-box" id="veggieCamBox">
+            <video id="veggieVideo" autoplay playsinline></video>
+            <canvas id="veggieCanvas" style="display:none;"></canvas>
+            <img id="veggiePreview" alt="Veggie photo" style="display:none;">
+            <div class="vm-cam-overlay" id="veggieOverlay">
+              <i class="bi bi-camera-fill"></i>
+              <span>Tap to start camera</span>
+            </div>
+          </div>
+          <div class="vm-camera-actions">
+            <button type="button" class="btn-capture" id="veggieCaptureBtn" style="display:none;">
+              <i class="bi bi-camera-fill"></i> Capture Photo
+            </button>
+            <button type="button" class="btn-retake" id="veggieRetakeBtn">
+              <i class="bi bi-arrow-counterclockwise"></i> Retake
+            </button>
+          </div>
+          <div class="vm-err d-none" id="err-veggie_photo"></div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">Surplus Level</label>
+          {{ form.surplus_level }}
+          <div class="vm-err d-none" id="err-surplus_level"></div>
+        </div>
+
+        <div class="vm-field-row">
+          <div class="vm-field">
+            <label class="vm-label">Quantity (kg)</label>
+            {{ form.quantity }}
+            <div class="vm-err d-none" id="err-quantity"></div>
+          </div>
+          <div class="vm-field" id="priceField">
+            <label class="vm-label">Price per kg (₱)</label>
+            {{ form.price_per_kg }}
+            <div class="vm-err d-none" id="err-price_per_kg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="vm-post-section">
+        <div class="vm-post-section-title">📍 Pickup & Timer</div>
+
+        <div class="vm-field">
+          <label class="vm-label">Pickup Location</label>
+          <div class="vm-location-box">
+            <i class="bi bi-pin-map-fill"></i> La Trinidad Trading Post, Benguet
+          </div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">Further Instructions (optional)</label>
+          {{ form.pickup_note }}
+          <div class="form-text">{{ form.pickup_note.help_text }}</div>
+        </div>
+
+        <div class="vm-field" id="timerField">
+          <label class="vm-label">Listing Duration</label>
+          <div class="vm-field-row">
+            <div class="vm-field">{{ form.timer_value }}</div>
+            <div class="vm-field">{{ form.timer_unit }}</div>
+          </div>
+          <div class="form-text">How long before unclaimed items go to rescue.</div>
+        </div>
+
+        <div class="vm-field d-none" id="donateNote">
+          <div style="background:#fff5f5;border:1.5px solid #ffcdd2;border-radius:12px;padding:0.75rem 1rem;font-size:0.88rem;color:#a81c1c;">
+            <i class="bi bi-heart-fill me-1"></i> This post will go <strong>directly to the free Donate pool</strong> — community kitchens can claim it immediately.
+          </div>
+        </div>
+      </div>
+
+      <div class="vm-post-submit-wrap">
+        <button type="submit" class="vm-btn-green w-100" id="postSubmitBtn">
+          <i class="bi bi-send-fill me-2"></i>Send OTP & Continue
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── STEP 2: OTP ── -->
+  <div id="stepOTP" class="vm-post-step-content" style="display:none;">
+    <div class="vm-otp-card">
+      <div class="vm-otp-icon">📱</div>
+      <h3 class="vm-otp-title">Check Your Phone</h3>
+      <p class="vm-otp-sub">We sent a 6-digit OTP to</p>
+      <div class="vm-phone-display" id="postOtpPhone"></div>
+
+      <form id="postOtpForm" novalidate class="mt-4">
+        {% csrf_token %}
+        <label class="vm-label text-center d-block mb-2">Enter 6-digit OTP</label>
+        <input type="text" class="otp-input form-control" id="postOtpInput"
+               maxlength="6" inputmode="numeric" autocomplete="one-time-code"
+               placeholder="_ _ _ _ _ _">
+        <div class="vm-err d-none mt-2 justify-content-center" id="err-post-otp"></div>
+        <button type="submit" class="vm-btn-green w-100 mt-3" id="postOtpBtn">
+          <i class="bi bi-check-circle-fill me-2"></i>Confirm & Post
+        </button>
+      </form>
+      <p class="text-muted text-center small mt-3"><i class="bi bi-clock me-1"></i>OTP expires in 10 minutes.</p>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Success ── -->
+  <div id="stepSuccess" class="vm-post-step-content" style="display:none;">
+    <div class="vm-success-card">
+      <div class="vm-success-icon" id="successIcon">🎉</div>
+      <h3 id="successTitle">Post is Live!</h3>
+      <p id="postSuccessMsg" class="text-muted mb-3"></p>
+
+      <!-- Post receipt -->
+      <div id="postReceipt" style="background:#f0faf4;border:1.5px solid #a3d9b1;border-radius:14px;padding:1.1rem;text-align:left;width:100%;margin-bottom:1rem;">
+        <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:0.5rem;" id="rcpt-label">Post Receipt</div>
+        <div style="font-weight:700;font-size:1.1rem;margin-bottom:0.6rem;" id="rcpt-vegetable"></div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+          <span style="font-size:0.9rem;"><i class="bi bi-box-seam-fill text-success me-1"></i><span id="rcpt-quantity"></span> kg</span>
+          <span style="font-size:0.9rem;" id="rcpt-price-wrap"><i class="bi bi-tag-fill text-success me-1"></i>₱<span id="rcpt-price"></span>/kg</span>
+        </div>
+        <div style="font-size:0.88rem;color:#555;margin-bottom:0.3rem;"><i class="bi bi-geo-alt-fill text-success me-1"></i><span id="rcpt-location"></span></div>
+        <div style="font-size:0.88rem;color:#555;margin-bottom:0.3rem;" id="rcpt-expiry-wrap"><i class="bi bi-clock-fill text-warning me-1"></i>Live for <span id="rcpt-expiry"></span></div>
+        <div style="font-size:0.88rem;color:#555;"><i class="bi bi-person-fill text-success me-1"></i><span id="rcpt-farmer"></span></div>
+        <div style="margin-top:0.7rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;font-size:0.78rem;color:#888;">
+          Ref: <span id="rcpt-post-id" style="font-family:monospace;"></span>
+        </div>
+      </div>
+
+      <p class="text-muted small mb-3">Screenshot this as your record.</p>
+      <a href="{% url 'home' %}" class="vm-btn-green w-100">
+        <i class="bi bi-house-fill me-2"></i>Back to Home
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const POST_URL   = "{% url 'post_vegetable' %}";
+const VERIFY_URL = "{% url 'post_verify' %}";
+
+// ── Sell / Donate toggle ──────────────────────────────────────
+function setPostType(type) {
+  document.getElementById('id_post_type').value = type;
+  const isSell = type === 'sell';
+  const tSell   = document.getElementById('toggleSell');
+  const tDonate = document.getElementById('toggleDonate');
+  if (tSell)   tSell.classList.toggle('active', isSell);
+  if (tDonate) tDonate.classList.toggle('active', !isSell);
+  document.getElementById('priceField').style.display   = isSell ? '' : 'none';
+  document.getElementById('timerField').style.display   = isSell ? '' : 'none';
+  document.getElementById('donateNote').classList.toggle('d-none', isSell);
+  const btn = document.getElementById('postSubmitBtn');
+  btn.innerHTML = isSell
+    ? '<i class="bi bi-send-fill me-2"></i>Send OTP & Continue'
+    : '<i class="bi bi-heart-fill me-2"></i>Send OTP & Donate';
+}
+
+// ── Camera with tap-to-start ──────────────────────────────────
+function setupCamera(overlayId, videoId, canvasId, captureBtnId, previewId, hiddenId, retakeBtnId) {
+  const overlay    = document.getElementById(overlayId);
+  const video      = document.getElementById(videoId);
+  const canvas     = document.getElementById(canvasId);
+  const captureBtn = document.getElementById(captureBtnId);
+  const preview    = document.getElementById(previewId);
+  const hidden     = document.getElementById(hiddenId);
+  const retakeBtn  = document.getElementById(retakeBtnId);
+  let stream = null;
+
+  async function startCam() {
+    overlay.style.display = 'none';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    } catch {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch {
+        overlay.style.display = 'flex';
+        overlay.innerHTML = '<i class="bi bi-camera-video-off-fill"></i><span>Camera denied</span>';
+        return;
+      }
+    }
+    video.srcObject = stream;
+    video.style.display = 'block';
+    captureBtn.style.display = 'inline-flex';
+    retakeBtn.style.display  = 'none';
+    preview.style.display    = 'none';
+    hidden.value = '';
+  }
+
+  overlay.addEventListener('click', startCam);
+
+  captureBtn.addEventListener('click', () => {
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    hidden.value = dataUrl;
+    preview.src  = dataUrl;
+    preview.style.display    = 'block';
+    video.style.display      = 'none';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display  = 'inline-flex';
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    const errEl = document.getElementById('err-' + hiddenId.replace('id_',''));
+    if (errEl) { errEl.textContent = ''; errEl.classList.add('d-none'); }
+  });
+
+  retakeBtn.addEventListener('click', startCam);
+}
+
+setupCamera('farmerOverlay','farmerVideo','farmerCanvas','farmerCaptureBtn','farmerPreview','id_farmer_photo','farmerRetakeBtn');
+setupCamera('veggieOverlay','veggieVideo','veggieCanvas','veggieCaptureBtn','veggiePreview','id_veggie_photo','veggieRetakeBtn');
+
+// ── Step helpers ──────────────────────────────────────────────
+function setStep(n) {
+  document.getElementById('stepForm').style.display    = n === 1 ? '' : 'none';
+  document.getElementById('stepOTP').style.display     = n === 2 ? '' : 'none';
+  document.getElementById('stepSuccess').style.display = n === 3 ? '' : 'none';
+  [1,2,3].forEach(i => {
+    const el = document.getElementById('pstep' + i);
+    el.classList.toggle('active',    i === n);
+    el.classList.toggle('completed', i < n);
+  });
+  window.scrollTo(0, 0);
+}
+
+// ── Surplus level → quantity limits ──────────────────────────
+const surplusRules = { LOW: [5, 20], MEDIUM: [20, 100], HIGH: [100, 10000] };
+const surplusHints = { LOW: '5–20 kg', MEDIUM: '20–100 kg', HIGH: '100+ kg' };
+const qtyInput = document.querySelector('[name="quantity"]');
+const surplusSelect = document.querySelector('[name="surplus_level"]');
+
+function applySurplusLimits() {
+  const level = surplusSelect.value;
+  const [min, max] = surplusRules[level] || [0.1, 10000];
+  qtyInput.min = min;
+  qtyInput.max = max;
+  qtyInput.placeholder = `e.g. ${min} (${surplusHints[level]})`;
+  const val = parseFloat(qtyInput.value);
+  if (qtyInput.value && (val < min || val > max)) qtyInput.value = min;
+}
+
+surplusSelect.addEventListener('change', applySurplusLimits);
+applySurplusLimits();
+
+// ── Submit post form ──────────────────────────────────────────
+document.getElementById('postForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const farmerPhoto = document.getElementById('id_farmer_photo').value;
+  const veggiePhoto = document.getElementById('id_veggie_photo').value;
+  let hasError = false;
+
+  if (!farmerPhoto || !farmerPhoto.startsWith('data:image')) {
+    const el = document.getElementById('err-farmer_photo');
+    el.textContent = 'Please capture your face photo.';
+    el.classList.remove('d-none');
+    hasError = true;
+  }
+  if (!veggiePhoto || !veggiePhoto.startsWith('data:image')) {
+    const el = document.getElementById('err-veggie_photo');
+    el.textContent = 'Please capture a photo of your vegetables.';
+    el.classList.remove('d-none');
+    hasError = true;
+  }
+  if (hasError) return;
+
+  const btn = document.getElementById('postSubmitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending OTP...';
+
+  const fd  = new FormData(e.target);
+  const res = await fetch(POST_URL, {
+    method: 'POST',
+    headers: {'X-CSRFToken': fd.get('csrfmiddlewaretoken')},
+    body: fd,
+  });
+  const data = await res.json();
+
+  btn.disabled = false;
+  const isDonate = document.getElementById('id_post_type').value === 'donate';
+  btn.innerHTML = isDonate
+    ? '<i class="bi bi-heart-fill me-2"></i>Send OTP & Donate'
+    : '<i class="bi bi-send-fill me-2"></i>Send OTP & Continue';
+
+  if (data.ok) {
+    document.getElementById('postOtpPhone').textContent = data.phone;
+    setStep(2);
+    document.getElementById('postOtpInput').focus();
+  } else {
+    Object.entries(data.errors || {}).forEach(([field, msg]) => {
+      const el = document.getElementById('err-' + field);
+      if (el) { el.textContent = msg.replace(/^\*\s*/, ''); el.classList.remove('d-none'); }
+    });
+  }
+});
+
+// ── Submit OTP ────────────────────────────────────────────────
+document.getElementById('postOtpForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('postOtpBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+
+  const fd  = new FormData(e.target);
+  fd.set('otp_code', document.getElementById('postOtpInput').value);
+  const res = await fetch(VERIFY_URL, {
+    method: 'POST',
+    headers: {'X-CSRFToken': fd.get('csrfmiddlewaretoken')},
+    body: fd,
+  });
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Confirm & Post';
+
+  if (data.ok) {
+    document.getElementById('postSuccessMsg').textContent = data.message;
+    document.getElementById('rcpt-vegetable').textContent = data.vegetable || '';
+    document.getElementById('rcpt-quantity').textContent  = data.quantity  || '';
+    document.getElementById('rcpt-location').textContent  = data.location  || '';
+    document.getElementById('rcpt-farmer').textContent    = data.farmer_name || '';
+    document.getElementById('rcpt-post-id').textContent   = data.post_id ? `POST-${String(data.post_id).padStart(5,'0')}` : '';
+
+    if (data.is_donation) {
+      document.getElementById('successIcon').textContent  = '🍲';
+      document.getElementById('successTitle').textContent = 'Donation is Live!';
+      document.getElementById('rcpt-label').textContent   = 'Donation Receipt';
+      document.getElementById('rcpt-price-wrap').style.display  = 'none';
+      document.getElementById('rcpt-expiry-wrap').style.display = 'none';
+      // Tint receipt red
+      document.getElementById('postReceipt').style.background = '#fff5f5';
+      document.getElementById('postReceipt').style.borderColor = '#ffcdd2';
+    } else {
+      document.getElementById('rcpt-price').textContent  = data.price_per_kg || '';
+      document.getElementById('rcpt-expiry').textContent = data.expiry_label || '';
+    }
+    setStep(3);
+  } else {
+    const errEl = document.getElementById('err-post-otp');
+    errEl.textContent = (data.errors?.otp_code || data.errors?.__all__ || 'Invalid OTP.').replace(/^\*\s*/, '');
+    errEl.classList.remove('d-none');
+  }
+});
+
+// Auto-submit OTP when 6 digits
+document.getElementById('postOtpInput').addEventListener('input', function () {
+  if (this.value.length === 6) document.getElementById('postOtpForm').requestSubmit();
+});
+
+// Initialise form state based on forced type
+(function() {
+  const type = document.getElementById('id_post_type').value;
+  if (type === 'donate') setPostType('donate');
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- ── Top App Bar ── -->
+<header class="vm-appbar">
+  <div class="vm-appbar-inner">
+    <div class="vm-appbar-left">
+      <img src="{% static 'core/images/logo.png' %}" alt="logo" class="vm-appbar-logo"/>
+      <div>
+        <div class="vm-appbar-title">VeggieMatch</div>
+        <div class="vm-appbar-sub">La Trinidad Trading Post</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── Hero Banner ── -->
+<div class="vm-banner-wrap">
+  <div class="vm-banner">
+    <div class="vm-banner-text">
+      <div class="vm-banner-tag">🌱 La Trinidad Trading Post</div>
+      <h2 class="vm-banner-title">Fresh Vegetables,<br>Less Waste</h2>
+      <p class="vm-banner-sub">Buy surplus veggies from local farmers or claim free donations for your community.</p>
+    </div>
+    <div class="vm-banner-emoji">🥬🥕🍅</div>
+  </div>
+</div>
+
+<!-- ── Quick Actions ── -->
+<div style="display:flex;gap:0.75rem;padding:0 1rem 0.5rem;">
+  <a href="{% url 'posted_veggies' %}" style="flex:1;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
+    <div style="font-size:1.6rem;">🛒</div>
+    <div style="font-size:0.82rem;font-weight:800;color:#1a6e2e;margin-top:0.3rem;">Buy Vegetables</div>
+    <div style="font-size:0.72rem;color:#555;">Fresh surplus picks</div>
+  </a>
+  <a href="{% url 'rescue_list' %}" style="flex:1;background:#fdecea;border:1.5px solid #ffcdd2;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
+    <div style="font-size:1.6rem;">🍲</div>
+    <div style="font-size:0.82rem;font-weight:800;color:#a81c1c;margin-top:0.3rem;">Free Donations</div>
+    <div style="font-size:0.72rem;color:#555;">Help reduce food waste</div>
+  </a>
+  <a href="{% url 'post_vegetable' %}?type=sell" style="flex:1;background:#fff8e1;border:1.5px solid #ffe082;border-radius:14px;padding:0.85rem;text-decoration:none;text-align:center;">
+    <div style="font-size:1.6rem;">📦</div>
+    <div style="font-size:0.82rem;font-weight:800;color:#e65100;margin-top:0.3rem;">Post Surplus</div>
+    <div style="font-size:0.72rem;color:#555;">Sell or donate yours</div>
+  </a>
+</div>
+
+<!-- ── Community Impact ── -->
+<div style="margin:0.6rem 1rem;background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border:1px solid #a5d6a7;border-radius:14px;padding:0.75rem 1rem;">
+  <div style="font-size:0.7rem;color:#2e7d32;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:0.5rem;">🌱 Community Impact</div>
+  <div style="display:flex;justify-content:space-around;text-align:center;gap:0.5rem;">
+    <div>
+      <div style="font-size:1.3rem;font-weight:800;color:#1b5e20;">{{ impact.kg_rescued|floatformat:1 }}</div>
+      <div style="font-size:0.72rem;color:#555;">kg rescued</div>
+    </div>
+    <div style="width:1px;background:#a5d6a7;"></div>
+    <div>
+      <div style="font-size:1.3rem;font-weight:800;color:#1b5e20;">{{ impact.posts_donated }}</div>
+      <div style="font-size:0.72rem;color:#555;">posts donated</div>
+    </div>
+    <div style="width:1px;background:#a5d6a7;"></div>
+    <div>
+      <div style="font-size:1.3rem;font-weight:800;color:#1b5e20;">{{ impact.kg_sold|floatformat:1 }}</div>
+      <div style="font-size:0.72rem;color:#555;">kg sold</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Listings ── -->
+<div class="vm-listings-wrap">
+  <div class="vm-listings-header">
+    <span class="vm-listings-title">🥬 Recent Posts</span>
+    <a href="{% url 'posted_veggies' %}" class="vm-count-pill" style="text-decoration:none;">View All</a>
+  </div>
+
+  {% if posts %}
+  <div class="vm-grid" id="postGrid">
+    {% for post in posts|slice:":1" %}
+    <div class="vm-post-card" data-name="{{ post.vegetable|lower }}">
+
+      <div class="vm-post-img">
+        {% if post.veggie_photo %}
+          <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
+        {% else %}
+          <div class="vm-post-img-placeholder">🥬</div>
+        {% endif %}
+      </div>
+
+      <div class="vm-post-body">
+        <div class="vm-post-name">{{ post.vegetable }}</div>
+        <div class="vm-post-farmer">
+          {% if post.farmer_photo %}
+            <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
+                 class="zoomable"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #a3d9b1;cursor:zoom-in;">
+          {% else %}
+            <i class="bi bi-person-fill"></i>
+          {% endif %}
+          {{ post.farmer_name }}
+        </div>
+        <div class="vm-post-meta">
+          <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg</span>
+          <span><i class="bi bi-tag-fill"></i> ₱{{ post.price_per_kg }}/kg</span>
+        </div>
+        <div class="vm-post-timer">
+          <i class="bi bi-calendar-check-fill"></i>
+          <span>Posted {{ post.created_at|date:"M d, Y g:i A" }}</span>
+          <span class="vm-timer d-none" 
+                data-expiry="{{ post.expiry_time|date:'c' }}"
+                data-post-id="{{ post.pk }}"
+                data-created="{{ post.created_at|date:'c' }}"></span>
+        </div>
+        <div class="vm-post-actions">
+          <a href="{% url 'buy_start' post.pk %}" class="vm-claim-btn">
+            <i class="bi bi-basket-fill"></i> Buy
+          </a>
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="vm-empty-state">
+    <div class="vm-empty-emoji">🥦</div>
+    <h4>No listings right now</h4>
+    <p>Be the first to post surplus vegetables today.</p>
+    <a href="{% url 'post_vegetable' %}?type=sell" class="vm-btn-green">
+      <i class="bi bi-plus-circle me-1"></i> Post Vegetables
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Recent Donations ── -->
+<div class="vm-listings-wrap" style="padding-top:0;">
+  <div class="vm-listings-header">
+    <span class="vm-listings-title">🍲 Recent Donations</span>
+    <a href="{% url 'rescue_list' %}" class="vm-count-pill" style="text-decoration:none;">View All</a>
+  </div>
+
+  {% if donate_posts %}
+  <div class="vm-grid">
+    {% for post in donate_posts %}
+    <div class="vm-post-card vm-rescue-card">
+      <div class="vm-post-img">
+        {% if post.veggie_photo %}
+          <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
+        {% else %}
+          <div class="vm-post-img-placeholder">🥬</div>
+        {% endif %}
+        <span class="vm-surplus-badge rescue-badge">🆓 Free</span>
+      </div>
+      <div class="vm-post-body">
+        <div class="vm-post-name">{{ post.vegetable }}</div>
+        <div class="vm-post-farmer">
+          {% if post.farmer_photo %}
+            <img src="{{ post.farmer_photo.url }}" alt="{{ post.farmer_name }}"
+                 class="zoomable"
+                 style="width:22px;height:22px;border-radius:50%;object-fit:cover;margin-right:4px;vertical-align:middle;border:1.5px solid #ffcdd2;cursor:zoom-in;">
+          {% else %}
+            <i class="bi bi-person-fill"></i>
+          {% endif %}
+          {{ post.farmer_name }}
+        </div>
+        <div class="vm-post-meta">
+          <span><i class="bi bi-box-seam-fill"></i> {{ post.quantity }} kg remaining</span>
+          <span class="text-success fw-bold"><i class="bi bi-gift-fill"></i> Free</span>
+        </div>
+        <div class="vm-post-timer">
+          <i class="bi bi-calendar-check-fill"></i>
+          <span>Donated {% if post.donated_at %}{{ post.donated_at|date:"M d, Y g:i A" }}{% else %}{{ post.created_at|date:"M d, Y g:i A" }}{% endif %}</span>
+        </div>
+        <div class="vm-post-actions">
+          <a href="{% url 'rescue_start' post.pk %}" class="vm-rescue-btn">
+            <i class="bi bi-hand-index-thumb-fill"></i> Claim
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="vm-empty-state">
+    <div class="vm-empty-emoji">🍲</div>
+    <h4>No donations yet</h4>
+    <p>Unclaimed vegetables will appear here.</p>
+    <a href="{% url 'post_vegetable' %}?type=donate" class="vm-btn-red">
+      <i class="bi bi-heart-fill me-1"></i> Post a Donation
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+
+
+{% endblock %}

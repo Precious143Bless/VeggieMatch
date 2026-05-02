@@ -1,0 +1,340 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="vm-post-page">
+
+  <div class="vm-post-header">
+    <a href="{% url 'home' %}" class="vm-back-arrow"><i class="bi bi-arrow-left"></i></a>
+    <div class="vm-post-header-title">Buy Vegetables</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <div class="vm-post-steps">
+    <div class="vm-pstep active" id="pstep1"><span>1</span> Your Info</div>
+    <div class="vm-pstep-line"></div>
+    <div class="vm-pstep" id="pstep2"><span>2</span> OTP</div>
+    <div class="vm-pstep-line"></div>
+    <div class="vm-pstep" id="pstep3"><span>3</span> Confirmed!</div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div id="stepForm" class="vm-post-step-content">
+
+    <div class="vm-rescue-summary-card" style="border-color:#a3d9b1;background:var(--green-pale);">
+      <div class="vm-rescue-summary-img" style="background:var(--green-pale);">
+        {% if post.veggie_photo %}
+          <img src="{{ post.veggie_photo.url }}" alt="{{ post.vegetable }}"/>
+        {% else %}
+          <div class="vm-rescue-summary-placeholder" style="background:linear-gradient(135deg,#edf7f0,#d4edda);">🥬</div>
+        {% endif %}
+      </div>
+      <div class="vm-rescue-summary-info">
+        <div class="vm-rescue-summary-name">{{ post.vegetable }}</div>
+        <div class="vm-rescue-summary-meta">
+          <span><i class="bi bi-box-seam-fill text-success"></i> {{ post.quantity }} kg</span>
+          <span><i class="bi bi-tag-fill text-success"></i> ₱{{ post.price_per_kg }}/kg</span>
+        </div>
+        <div class="vm-rescue-summary-loc" style="color:var(--text-muted);">
+          <i class="bi bi-geo-alt-fill" style="color:var(--green);"></i>
+          {{ post.pickup_address }}{% if post.pickup_note %} — {{ post.pickup_note }}{% endif %}
+        </div>
+        <div class="vm-rescue-summary-farmer">
+          <i class="bi bi-person-fill" style="color:var(--green);"></i> {{ post.farmer_name }}
+          &nbsp;·&nbsp;
+          <i class="bi bi-circle-fill" style="color:#4caf50;font-size:0.55rem;vertical-align:middle;"></i>
+          <span style="font-size:0.82rem;color:#2e7d32;font-weight:700;">Fresh today</span>
+          <!-- hidden timer still fires expiry warning SMS — not shown to buyer -->
+          <span class="vm-timer d-none"
+                data-expiry="{{ post.expiry_time|date:'c' }}"
+                data-post-id="{{ post.pk }}"
+                data-created="{{ post.created_at|date:'c' }}"></span>
+        </div>
+      </div>
+    </div>
+
+    <form id="buyForm" novalidate>
+      {% csrf_token %}
+      <input type="hidden" id="id_buyer_photo" name="buyer_photo" value="">
+
+      <div class="vm-post-section">
+        <div class="vm-post-section-title">🛒 Your Info</div>
+
+        <div class="vm-field">
+          <label class="vm-label">Your Name</label>
+          {{ form.buyer_name }}
+          <div class="vm-err d-none" id="err-buyer_name"></div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">{{ form.quantity_kg.label }}</label>
+          {{ form.quantity_kg }}
+          <div class="form-text">Maximum available: <strong>{{ post.quantity }} kg</strong></div>
+          <div class="vm-err d-none" id="err-quantity_kg"></div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label">Phone Number</label>
+          {{ form.phone_number }}
+          <div class="form-text">An OTP will be sent to this number.</div>
+          <div class="vm-err d-none" id="err-phone_number"></div>
+        </div>
+
+        <div class="vm-field">
+          <label class="vm-label"><i class="bi bi-person-bounding-box me-1"></i>Your Face Photo <span class="text-danger">*</span></label>
+          <div class="vm-camera-box">
+            <video id="buyerVideo" autoplay playsinline></video>
+            <canvas id="buyerCanvas" style="display:none;"></canvas>
+            <img id="buyerPreview" alt="Face photo" style="display:none;">
+            <div class="vm-cam-overlay" id="buyerOverlay">
+              <i class="bi bi-camera-fill"></i>
+              <span>Tap to start camera</span>
+            </div>
+          </div>
+          <div class="vm-camera-actions">
+            <button type="button" class="btn-capture" id="buyerCaptureBtn" style="display:none;">
+              <i class="bi bi-camera-fill"></i> Capture Photo
+            </button>
+            <button type="button" class="btn-retake" id="buyerRetakeBtn">
+              <i class="bi bi-arrow-counterclockwise"></i> Retake
+            </button>
+          </div>
+          <div class="vm-err d-none mt-1" id="err-buyer_photo"></div>
+        </div>
+      </div>
+
+      <div class="vm-post-submit-wrap">
+        <button type="submit" class="vm-btn-green w-100" id="buySubmitBtn">
+          <i class="bi bi-send-fill me-2"></i>Send OTP & Confirm Purchase
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- STEP 2: OTP -->
+  <div id="stepOTP" class="vm-post-step-content" style="display:none;">
+    <div class="vm-otp-card">
+      <div class="vm-otp-icon">📱</div>
+      <h3 class="vm-otp-title">Check Your Phone</h3>
+      <p class="vm-otp-sub">We sent a 6-digit OTP to</p>
+      <div class="vm-phone-display" id="buyOtpPhone"></div>
+      <form id="buyOtpForm" novalidate class="mt-4">
+        {% csrf_token %}
+        <label class="vm-label text-center d-block mb-2">Enter 6-digit OTP</label>
+        <input type="text" class="otp-input form-control" id="buyOtpInput"
+               maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="_ _ _ _ _ _">
+        <div class="vm-err d-none mt-2 justify-content-center" id="err-buy-otp"></div>
+        <button type="submit" class="vm-btn-green w-100 mt-3" id="buyOtpBtn">
+          <i class="bi bi-check-circle-fill me-2"></i>Confirm Purchase
+        </button>
+      </form>
+      <p class="text-muted text-center small mt-3"><i class="bi bi-clock me-1"></i>OTP expires in 10 minutes.</p>
+    </div>
+  </div>
+
+  <!-- STEP 3: Success -->
+  <div id="stepSuccess" class="vm-post-step-content" style="display:none;">
+    <div class="vm-success-card">
+      <div class="vm-success-icon">✅</div>
+      <h3>Purchase Confirmed!</h3>
+      <p id="buySuccessMsg" class="text-muted mb-3"></p>
+
+      <!-- Purchase receipt -->
+      <div id="buyReceipt" style="background:#f0faf4;border:1.5px solid #a3d9b1;border-radius:14px;padding:1.1rem;text-align:left;width:100%;margin-bottom:1rem;">
+        <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:0.5rem;">Purchase Receipt</div>
+        <div style="font-weight:700;font-size:1.1rem;margin-bottom:0.6rem;" id="buy-rcpt-vegetable"></div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+          <span style="font-size:0.9rem;"><i class="bi bi-box-seam-fill text-success me-1"></i><span id="buy-rcpt-quantity"></span> kg</span>
+          <span style="font-size:0.9rem;font-weight:700;color:var(--green);">₱<span id="buy-rcpt-total"></span> total</span>
+        </div>
+        <div style="font-size:0.88rem;color:#555;margin-bottom:0.4rem;"><i class="bi bi-geo-alt-fill text-success me-1"></i><span id="buy-rcpt-location"></span></div>
+        <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.3rem;color:#444;">Farmer Contact</div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
+            <img id="buy-rcpt-farmer-photo" src="" alt="" class="zoomable" style="display:none;width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #a3d9b1;cursor:zoom-in;">
+            <div>
+              <div style="font-size:0.9rem;" id="buy-rcpt-farmer-name"></div>
+              <div style="font-size:0.9rem;margin-top:0.2rem;" id="buy-rcpt-farmer-phone"></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.3rem;color:#444;">Your Photo on Record</div>
+          <img id="buy-rcpt-buyer-photo" src="" alt="Your photo" class="zoomable" style="display:none;width:56px;height:56px;border-radius:10px;object-fit:cover;border:2px solid #a3d9b1;cursor:zoom-in;">
+        </div>
+        <div style="margin-top:0.7rem;padding-top:0.6rem;border-top:1px dashed #a3d9b1;font-size:0.78rem;color:#888;">
+          Ref: <span id="buy-rcpt-ref" style="font-family:monospace;"></span>
+        </div>
+      </div>
+
+      <p class="text-muted small mb-3">Screenshot this receipt to show the farmer at pickup.</p>
+      <a href="{% url 'home' %}" class="vm-btn-green w-100">
+        <i class="bi bi-house-fill me-2"></i>Back to Home
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const BUY_URL      = "{% url 'buy_start' post.pk %}";
+const VERIFY_URL   = "{% url 'buy_verify' %}";
+const FARMER_PHONE = "{{ post.phone_number }}";
+const MAX_QTY      = {{ post.quantity }};
+
+(function() {
+  const overlay = document.getElementById('buyerOverlay');
+  const video   = document.getElementById('buyerVideo');
+  const canvas  = document.getElementById('buyerCanvas');
+  const capBtn  = document.getElementById('buyerCaptureBtn');
+  const preview = document.getElementById('buyerPreview');
+  const hidden  = document.getElementById('id_buyer_photo');
+  const retake  = document.getElementById('buyerRetakeBtn');
+  let stream = null;
+
+  async function startCam() {
+    overlay.style.display = 'none';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    } catch {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch {
+        overlay.style.display = 'flex';
+        overlay.innerHTML = '<i class="bi bi-camera-video-off-fill"></i><span>Camera denied</span>';
+        return;
+      }
+    }
+    video.srcObject = stream;
+    video.style.display   = 'block';
+    capBtn.style.display  = 'inline-flex';
+    retake.style.display  = 'none';
+    preview.style.display = 'none';
+    hidden.value = '';
+  }
+  overlay.addEventListener('click', startCam);
+  capBtn.addEventListener('click', () => {
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    hidden.value = canvas.toDataURL('image/jpeg', 0.82);
+    preview.src  = hidden.value;
+    preview.style.display = 'block';
+    video.style.display   = 'none';
+    capBtn.style.display  = 'none';
+    retake.style.display  = 'inline-flex';
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    const e = document.getElementById('err-buyer_photo');
+    if (e) { e.textContent = ''; e.classList.add('d-none'); }
+  });
+  retake.addEventListener('click', startCam);
+})();
+
+function setStep(n) {
+  ['stepForm','stepOTP','stepSuccess'].forEach((id, i) => {
+    document.getElementById(id).style.display = i + 1 === n ? '' : 'none';
+  });
+  [1,2,3].forEach(i => {
+    const el = document.getElementById('pstep' + i);
+    el.classList.toggle('active', i === n);
+    el.classList.toggle('completed', i < n);
+  });
+  window.scrollTo(0, 0);
+}
+
+document.getElementById('buyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn      = document.getElementById('buySubmitBtn');
+  const photo    = document.getElementById('id_buyer_photo').value;
+  const errPhoto = document.getElementById('err-buyer_photo');
+  const phoneVal = document.getElementById('id_phone_number')?.value?.trim();
+  const errPhone = document.getElementById('err-phone_number');
+  const qtyInput = document.getElementById('id_quantity_kg');
+  const errQty   = document.getElementById('err-quantity_kg');
+
+  if (phoneVal === FARMER_PHONE.trim()) {
+    errPhone.textContent = 'You cannot buy your own post.';
+    errPhone.classList.remove('d-none');
+    return;
+  }
+  if (qtyInput && parseFloat(qtyInput.value) > MAX_QTY) {
+    errQty.textContent = `Cannot exceed available quantity (${MAX_QTY} kg).`;
+    errQty.classList.remove('d-none');
+    return;
+  }
+  if (!photo || !photo.startsWith('data:image')) {
+    errPhoto.textContent = 'Please capture your face photo.';
+    errPhoto.classList.remove('d-none');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending OTP...';
+
+  const fd  = new FormData(e.target);
+  const res = await fetch(BUY_URL, { method: 'POST', headers: {'X-CSRFToken': fd.get('csrfmiddlewaretoken')}, body: fd });
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Send OTP & Confirm Purchase';
+
+  if (data.ok) {
+    document.getElementById('buyOtpPhone').textContent = data.phone;
+    setStep(2);
+    document.getElementById('buyOtpInput').focus();
+  } else {
+    Object.entries(data.errors || {}).forEach(([field, msg]) => {
+      const el = document.getElementById('err-' + field);
+      if (el) { el.textContent = msg.replace(/^\*\s*/, ''); el.classList.remove('d-none'); }
+    });
+  }
+});
+
+document.getElementById('buyOtpForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('buyOtpBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+
+  const fd = new FormData(e.target);
+  fd.set('otp_code', document.getElementById('buyOtpInput').value);
+  const res  = await fetch(VERIFY_URL, { method: 'POST', headers: {'X-CSRFToken': fd.get('csrfmiddlewaretoken')}, body: fd });
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Confirm Purchase';
+
+  if (data.ok) {
+    document.getElementById('buySuccessMsg').textContent = data.message || 'Purchase confirmed!';
+    const qty   = parseFloat(data.quantity  || 0);
+    const price = parseFloat(data.price_per_kg || 0);
+    document.getElementById('buy-rcpt-vegetable').textContent    = data.vegetable    || '';
+    document.getElementById('buy-rcpt-quantity').textContent     = data.quantity     || '';
+    document.getElementById('buy-rcpt-total').textContent        = (qty * price).toFixed(0);
+    document.getElementById('buy-rcpt-location').textContent     = data.location     || '';
+    document.getElementById('buy-rcpt-farmer-name').innerHTML    = data.farmer_name  ? `<i class="bi bi-person-fill me-1" style="color:var(--green);"></i>${data.farmer_name}` : '';
+    document.getElementById('buy-rcpt-farmer-phone').innerHTML   = data.farmer_phone ? `<i class="bi bi-telephone-fill me-1" style="color:var(--green);"></i><a href="tel:${data.farmer_phone}" style="color:var(--green);font-weight:600;">${data.farmer_phone}</a>` : '';
+    document.getElementById('buy-rcpt-ref').textContent          = data.ref          || '';
+    if (data.farmer_photo_url) {
+      const fp = document.getElementById('buy-rcpt-farmer-photo');
+      fp.src = data.farmer_photo_url; fp.style.display = '';
+    }
+    if (data.buyer_photo_url) {
+      const bp = document.getElementById('buy-rcpt-buyer-photo');
+      bp.src = data.buyer_photo_url; bp.style.display = '';
+    }
+    setStep(3);
+  } else {
+    const errEl = document.getElementById('err-buy-otp');
+    errEl.textContent = (data.errors?.otp_code || data.errors?.__all__ || 'Invalid OTP.').replace(/^\*\s*/, '');
+    errEl.classList.remove('d-none');
+  }
+});
+
+document.getElementById('buyOtpInput').addEventListener('input', function () {
+  if (this.value.length === 6) document.getElementById('buyOtpForm').requestSubmit();
+});
+</script>
+{% endblock %}
